@@ -212,6 +212,13 @@
     .score-label { color: #94a3b8; font-size: 1.3vh; }
     .score-val { font-size: 1.6vh; font-weight: bold; color: #38bdf8; }
 
+    /* マナのカラー別スコア表示用 */
+    .mana-color-breakdown { display: flex; gap: 0.3vw; font-size: 1.3vh; font-weight: bold; margin-left: 0.2vw; }
+    .mc-red { color: #ef4444; }
+    .mc-yellow { color: #eab308; }
+    .mc-blue { color: #3b82f6; }
+    .mc-purple { color: #a855f7; }
+
     #main-board { display: grid; grid-template-columns: 11vw 1fr; gap: 0.6vw; flex: 1; min-height: 0; }
     .zone { border: 0.2vh dashed #475569; border-radius: 0.8vh; padding: 0.6vh; background: #0f172a; position: relative; }
     .zone-title { font-size: 1.4vh; color: #94a3b8; text-align: center; }
@@ -222,14 +229,14 @@
     #refresh-btn { background: #10b981; margin-top: 0.4vh; width: 100%; display: none; }
     #refresh-btn:hover { background: #059669; }
 
-    /* マナゾーン：右側にボタンと被らないよう余裕を持たせ、溢れたら横スクロール可能に設定 */
-    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 10.5vh; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; align-items: center; padding-right: 9vw; }
+    /* マナゾーン：縦幅を 10.5vh -> 8.5vh に縮小 */
+    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 8.5vh; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; align-items: center; padding-right: 9vw; }
     .mana-btn { padding: 0.4vh 0.6vw; font-size: 1.3vh; border-radius: 0.3vh; border: none; color: white; cursor: pointer; font-weight: bold; }
     
-    /* マナカード：横幅を狭く（1.8vw）、縦長（8vh）に設定。黒の外周フチを追加 */
+    /* マナカード：縦幅を少し短く（8vh -> 6.5vh、幅 1.8vw -> 1.5vw）修正 */
     .mana-card { 
-      width: 1.8vw; 
-      height: 8vh; 
+      width: 1.5vw; 
+      height: 6.5vh; 
       border: 2px solid #000; 
       border-radius: 0.4vh; 
       display: inline-flex; 
@@ -268,7 +275,7 @@
     }
     .dummy-card img { width: 100%; height: 100%; object-fit: cover; }
     
-    /* 手札エリアのカード設定：サイズを2倍に（5.4vw / 13.6vh）、画像の上半分のみ表示 */
+    /* 手札エリアのカード設定：カード画像の上半分のみが表示されるように修正 */
     #hand-cards .dummy-card {
       width: 5.4vw;
       height: 13.6vh;
@@ -310,8 +317,8 @@
     #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
     #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
 
-    /* 手札エリア：カード拡大に合わせて高さ拡張（20vh）、溢れた場合に横スクロール可能に設定 */
-    #bottom-hand-panel { height: 20vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.6vh; display: flex; flex-direction: column; }
+    /* 手札エリア：マナエリア短縮分を反映して高さを拡大 (20vh -> 22vh) */
+    #bottom-hand-panel { height: 22vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.6vh; display: flex; flex-direction: column; }
     #hand-cards { display: flex; gap: 0.5vw; overflow-x: auto; flex: 1; align-items: center; padding-top: 0.2vh; }
     .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 0.4vh; flex-shrink: 0; }
     
@@ -360,7 +367,8 @@
       position: absolute; background: rgba(15, 23, 42, 0.7);
       border: 0.1vh solid #334155; border-radius: 1.2vh; display: flex; flex-direction: column; justify-content: center; padding: 0.6vh 0.8vw; z-index: 20;
     }
-    .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-space-between; align-items: center; }
+    /* 丸が端に寄るのを修正：justify-content: space-between で均等配置 */
+    .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-content: space-between; align-items: center; }
     .bar-node { width: 0.7vw; height: 0.7vw; max-width: 1vh; max-height: 1vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
     
     .movable-bar-handle {
@@ -376,7 +384,7 @@
 
     /* 縦方向の棒のサイズを少し小さく修正 */
     .bar-vertical { width: 1.6vw; height: 22vh; padding: 1vh 0.3vw; }
-    .bar-vertical .bar-track-line { width: 0.6vh; height: 100%; flex-direction: column; margin: 0 auto; }
+    .bar-vertical .bar-track-line { width: 0.6vh; height: 100%; flex-direction: column; margin: 0 auto; justify-content: space-between; }
     .bar-vertical .movable-bar-handle { width: 3.8vw; height: 2.5vh; left: calc(50% - 1.9vw); top: auto; }
 
     #track-left-p1 { bottom: 2vh; left: 20%; transform-origin: center center; transform: rotate(-15deg); }
@@ -1099,9 +1107,9 @@
     }
 
     let playerStates = [
-      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, trinity: 0 },
-      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, trinity: 0 },
-      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, trinity: 0 }
+      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0 },
+      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0 },
+      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0 }
     ];
 
     function handleNetworkMessage(data, senderConn) {
@@ -1208,12 +1216,22 @@
         if (idx === 0 && !isSelf) titleText = `◀ ${pName}`;
         if (idx === 2 && !isSelf) titleText = `${pName} ▶`;
 
+        /* マナの総数横に各色のマナ数を色のついた数字で併記する仕様を追加 */
         html += `
           <div class="score-group">
             <span class="score-p-title ${titleClass}">${titleText}</span>
             <div class="score-box"><span class="score-label">トリニティ:</span><span id="p${pNum}-trinity-val" class="score-val">0</span></div>
             <div class="score-box"><span class="score-label">獲得ライフ:</span><span id="p${pNum}-card-score" class="score-val" style="color:#e0f2fe;">0</span></div>
-            <div class="score-box"><span class="score-label">マナ:</span><span id="p${pNum}-mana-count" class="score-val" style="color:#38bdf8;">0</span></div>
+            <div class="score-box">
+              <span class="score-label">マナ:</span>
+              <span id="p${pNum}-mana-count" class="score-val" style="color:#38bdf8;">0</span>
+              <div class="mana-color-breakdown">
+                (<span class="mc-red" id="p${pNum}-mana-red">0</span>/
+                <span class="mc-yellow" id="p${pNum}-mana-yellow">0</span>/
+                <span class="mc-blue" id="p${pNum}-mana-blue">0</span>/
+                <span class="mc-purple" id="p${pNum}-mana-purple">0</span>)
+              </div>
+            </div>
           </div>
         `;
       });
@@ -1553,6 +1571,13 @@
       playerStates[myPlayerIndex].gyCount = graveyards[myPlayerIndex].length;
       playerStates[myPlayerIndex].manaCount = localManaList.length;
 
+      // 各色マナ数の計算
+      const colors = { red: 0, yellow: 0, blue: 0, purple: 0 };
+      localManaList.forEach(m => {
+        if (colors[m.color] !== undefined) colors[m.color]++;
+      });
+      playerStates[myPlayerIndex].manaColors = colors;
+
       broadcast({
         type: 'SYNC_PLAYER_STATE',
         payload: { index: myPlayerIndex, state: playerStates[myPlayerIndex] }
@@ -1570,6 +1595,17 @@
 
         const manaEl = document.getElementById(`p${pNum}-mana-count`);
         if (manaEl) manaEl.innerText = st.manaCount;
+
+        /* 各色のマナ数表示更新 */
+        const mColors = st.manaColors || { red: 0, yellow: 0, blue: 0, purple: 0 };
+        const redEl = document.getElementById(`p${pNum}-mana-red`);
+        if (redEl) redEl.innerText = mColors.red;
+        const yellowEl = document.getElementById(`p${pNum}-mana-yellow`);
+        if (yellowEl) yellowEl.innerText = mColors.yellow;
+        const blueEl = document.getElementById(`p${pNum}-mana-blue`);
+        if (blueEl) blueEl.innerText = mColors.blue;
+        const purpleEl = document.getElementById(`p${pNum}-mana-purple`);
+        if (purpleEl) purpleEl.innerText = mColors.purple;
 
         const trEl = document.getElementById(`p${pNum}-trinity-val`);
         if (trEl) trEl.innerText = st.trinity;
@@ -2078,8 +2114,8 @@
         mEl.innerText = m.color.substring(0, 1).toUpperCase();
         
         /* マナの横幅・配置間隔を調整 */
-        mEl.style.left = `${1 + idx * 2.2}vw`;
-        mEl.style.top = `1vh`;
+        mEl.style.left = `${1 + idx * 1.8}vw`;
+        mEl.style.top = `0.8vh`;
 
         let isDragging = false, startX, startY;
         let clickStartTime = 0;
@@ -2136,8 +2172,9 @@
       renderManaZone();
     }
 
+    /* トリニティカウンター上限を10（下限0）に設定 */
     function updateTrinity(val) {
-      playerStates[myPlayerIndex].trinity = Math.max(0, playerStates[myPlayerIndex].trinity + val);
+      playerStates[myPlayerIndex].trinity = Math.min(10, Math.max(0, playerStates[myPlayerIndex].trinity + val));
       document.getElementById('counter-num').innerText = playerStates[myPlayerIndex].trinity;
       broadcastPlayerState();
     }
