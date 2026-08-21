@@ -19,10 +19,10 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      font-size: 1.4vh; /* 文字サイズ全体を少し大きく変更 */
+      font-size: 1.4vh;
     }
 
-    /* どんなディスプレイでも64:31の割合を崩さないルートコンテナ */
+    /* ルートコンテナ */
     #app-wrapper {
       position: relative;
       width: min(100vw, calc(100vh * 64 / 31));
@@ -167,7 +167,6 @@
     .special-card-item img { object-fit: contain; }
     .special-card-item.active { border-color: #f59e0b !important; box-shadow: 0 0 1.2vh rgba(245, 158, 11, 0.8); }
 
-    /* 文字拡大に伴いボタン縦幅調整 */
     .action-btn {
       width: 100%; padding: 1.2vh 1vh; background: #10b981; color: white; border: none; border-radius: 0.6vh;
       font-size: 1.7vh; font-weight: bold; cursor: pointer; margin-top: 0.6vh; box-shadow: 0 0.4vh 0.6vh rgba(0,0,0,0.3);
@@ -180,7 +179,6 @@
       padding: 2vh 2vw; text-align: center; font-size: 2.2vh; font-weight: bold; color: #38bdf8; display: none; z-index: 1000;
     }
 
-    /* 拡大画像のサイズ変更：大きく拡大 */
     #hover-preview-card {
       position: absolute; width: 26vw; height: 65vh; background: #020617;
       border: 0.3vh solid #38bdf8; border-radius: 1.2vh; box-shadow: 0 2vh 5vh rgba(0, 0, 0, 0.9);
@@ -196,7 +194,8 @@
 
     /* Battle View */
     #battle-view { display: none; height: 100%; flex-direction: column; width: 100%; }
-    #play-field { display: flex; flex-direction: column; gap: 0.8vh; height: 100%; width: 100%; padding-right: 15vw; }
+    /* 墓地一覧の縮小に伴い、右側の余白を9.5vwに調整してプレイエリアを拡大 */
+    #play-field { display: flex; flex-direction: column; gap: 0.8vh; height: 100%; width: 100%; padding-right: 9.5vw; }
 
     #score-bar {
       display: flex; justify-content: space-around; align-items: center; background: #020617;
@@ -212,7 +211,6 @@
     .score-label { color: #94a3b8; font-size: 1.3vh; }
     .score-val { font-size: 1.6vh; font-weight: bold; color: #38bdf8; }
 
-    /* マナのカラー別スコア表示用 */
     .mana-color-breakdown { display: flex; gap: 0.3vw; font-size: 1.3vh; font-weight: bold; margin-left: 0.2vw; }
     .mc-red { color: #ef4444; }
     .mc-yellow { color: #eab308; }
@@ -223,17 +221,14 @@
     .zone { border: 0.2vh dashed #475569; border-radius: 0.8vh; padding: 0.6vh; background: #0f172a; position: relative; }
     .zone-title { font-size: 1.4vh; color: #94a3b8; text-align: center; }
 
-    /* 文字に合わせてボタンを大きめに変更 */
     button.game-btn { padding: 0.8vh 0.5vw; background: #4f46e5; color: white; border: none; border-radius: 0.4vh; cursor: pointer; font-size: 1.3vh; font-weight: bold; }
     button.game-btn:hover { background: #6366f1; }
     #refresh-btn { background: #10b981; margin-top: 0.4vh; width: 100%; display: none; }
     #refresh-btn:hover { background: #059669; }
 
-    /* マナゾーン：縦幅を 10.5vh -> 8.5vh に縮小 */
     #mana-zone { border-color: #3b82f6; background: #091e3a; height: 8.5vh; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; align-items: center; padding-right: 9vw; }
     .mana-btn { padding: 0.4vh 0.6vw; font-size: 1.3vh; border-radius: 0.3vh; border: none; color: white; cursor: pointer; font-weight: bold; }
     
-    /* マナカード：縦幅を少し短く（8vh -> 6.5vh、幅 1.8vw -> 1.5vw）修正 */
     .mana-card { 
       width: 1.5vw; 
       height: 6.5vh; 
@@ -258,7 +253,6 @@
     .mana-purple { background: #a855f7; color: #fff; }
     .mana-card.tapped { transform: rotate(90deg); }
 
-    /* マナを起こすボタン：縦幅拡大 & 改行対応 */
     .btn-untap-all {
       position: absolute; right: 0.5vw; top: 50%; transform: translateY(-50%);
       padding: 0.8vh 0.8vw; background: #38bdf8; color: #0f172a; font-weight: bold;
@@ -267,7 +261,6 @@
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
-    /* カード要素 (マスの拡大に合わせてほんの少し拡大: 2.7vw / 6.8vh -> 3.0vw / 7.5vh) */
     .dummy-card {
       width: 3.0vw; height: 7.5vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
@@ -275,14 +268,14 @@
     }
     .dummy-card img { width: 100%; height: 100%; object-fit: cover; }
     
-    /* 手札エリアのカード設定：カード画像の上半分のみが表示されるように修正 */
+    /* 手札エリアのカード設定：上下半分に切って上半分を表示 */
     #hand-cards .dummy-card {
-      width: 5.4vw;
-      height: 6.8vh; /* 高さを半分にして上半分の領域を確保 */
+      width: 3.0vw;
+      height: 3.8vh; /* 高さを半分にして上半分の領域にする */
     }
     #hand-cards .dummy-card img {
       width: 100%;
-      height: 13.6vh; /* 元の画像の高さを維持し、切り抜いて上半分を表示 */
+      height: 7.6vh; /* 元の画像の高さを維持し、切り抜いて上半分を表示 */
       object-fit: cover;
       object-position: top;
     }
@@ -317,8 +310,8 @@
     #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
     #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
 
-    /* 手札エリア：マナエリア短縮分を反映して高さを拡大 (20vh -> 22vh) */
-    #bottom-hand-panel { height: 22vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.6vh; display: flex; flex-direction: column; }
+    /* 手札エリア：カード上半分の表示に合わせて縦幅を縮小 (22vh -> 13vh) */
+    #bottom-hand-panel { height: 13vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.6vh; display: flex; flex-direction: column; }
     #hand-cards { display: flex; gap: 0.5vw; overflow-x: auto; flex: 1; align-items: center; padding-top: 0.2vh; }
     .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 0.4vh; flex-shrink: 0; }
     
@@ -329,18 +322,19 @@
     .btn-facedown:hover { background: #334155; color: #38bdf8; border-color: #38bdf8; }
     .btn-facedown:active { cursor: grabbing; }
 
-    #side-container { position: absolute; right: 0.8vw; top: 1vh; width: 14vw; height: 96vh; display: flex; flex-direction: column; gap: 0.8vh; z-index: 200; pointer-events: none; }
+    /* 墓地一覧の縮小に合わせてサイドコンテナの横幅を縮小 (14vw -> 8.5vw) */
+    #side-container { position: absolute; right: 0.8vw; top: 1vh; width: 8.5vw; height: 96vh; display: flex; flex-direction: column; gap: 0.8vh; z-index: 200; pointer-events: none; }
     .tray-panel { background: rgba(15, 23, 42, 0.95); border-radius: 0.8vh; padding: 0.8vh; display: flex; flex-direction: column; pointer-events: auto; }
-    .tray-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4vw; overflow-y: auto; flex: 1; padding-right: 0.2vw; }
+    /* 墓地一覧のカードを縦一列（grid-template-columns: 1fr）に変更 */
+    .tray-list { display: grid; grid-template-columns: 1fr; gap: 0.4vw; overflow-y: auto; flex: 1; padding-right: 0.2vw; }
     .tray-list .card-img-thumb { object-fit: contain; }
 
     #deck-search-panel { border: 0.2vh solid #0ea5e9; height: 35%; display: none; }
-    /* 墓地をスクロールできるように調整 */
     #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
-    /* カード固定枠（スロット）の大きさ変更：マスをほんの少し拡大し、1・7の上にマスを追加するため28vw/20vh、7列×3行グリッドに変更 */
+    /* カード固定枠（スロット）の大きさ変更：共有エリアの拡大に伴いサイズを拡大 (30vw / 21vh) */
     .lock-slot-container {
-      position: absolute; width: 28vw; height: 20vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
+      position: absolute; width: 30vw; height: 21vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(3, 1fr); gap: 0.3vw; padding: 0.5vh; z-index: 2; pointer-events: auto;
     }
@@ -356,7 +350,6 @@
       border-color: #38bdf8; color: #38bdf8; background: rgba(56, 189, 248, 0.1);
     }
     
-    /* すべてのプレイヤーの画面でカード固定枠を少しだけ下に移動 */
     #p1-lock-zone { bottom: 0.2vh; left: 50%; transform: translateX(-50%); }
     #p2-lock-zone { top: 9.5vh; left: 1%; transform: rotate(160deg); transform-origin: center center; }
     #p3-lock-zone { top: 9.5vh; right: 1%; transform: rotate(-160deg); transform-origin: center center; }
@@ -373,7 +366,6 @@
       position: absolute; background: rgba(15, 23, 42, 0.7);
       border: 0.1vh solid #334155; border-radius: 1.2vh; display: flex; flex-direction: column; justify-content: center; padding: 0.6vh 0.8vw; z-index: 20;
     }
-    /* 丸が端に寄るのを修正：justify-content: space-between で均等配置 */
     .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-content: space-between; align-items: center; }
     .bar-node { width: 0.7vw; height: 0.7vw; max-width: 1vh; max-height: 1vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
     
@@ -384,11 +376,9 @@
       box-shadow: 0 0 1.2vh rgba(245, 158, 11, 0.8);
     }
     
-    /* 上部の棒のサイズを少し小さく修正 */
     #track-top { top: 3vh; left: 50%; transform: translateX(-50%); width: 15vw; height: 3.2vh; }
     .bar-track-container .movable-bar-handle { width: 1.5vw; height: 6.5vh; top: calc(50% - 3.25vh); }
 
-    /* 縦方向の棒のサイズを少し小さく修正 */
     .bar-vertical { width: 1.6vw; height: 22vh; padding: 1vh 0.3vw; }
     .bar-vertical .bar-track-line { width: 0.6vh; height: 100%; flex-direction: column; margin: 0 auto; justify-content: space-between; }
     .bar-vertical .movable-bar-handle { width: 3.8vw; height: 2.5vh; left: calc(50% - 1.9vw); top: auto; }
@@ -400,7 +390,6 @@
     .counter-box { margin-top: 0.4vh; padding: 0.4vh; background: #1e1b4b; border: 0.1vh solid #6366f1; border-radius: 0.6vh; text-align: center; }
     .counter-btn { width: 1.8vw; height: 1.8vw; max-width: 2.5vh; max-height: 2.5vh; padding: 0; font-weight: bold; font-size: 1.4vh; border-radius: 0.4vh; background: #4f46e5; color: #fff; border: none; cursor: pointer; }
 
-    /* モーダル表示 */
     #life-reveal-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(0.6vh); }
     #modal-card { width: 25vw; height: 65vh; background: #020617; border: 0.4vh solid #38bdf8; border-radius: 1.6vh; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 1vh; overflow: hidden; }
     #modal-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 0.8vh; }
@@ -627,7 +616,6 @@
           
           <div class="zone" id="mana-zone">
             <div class="zone-title" style="margin-right:1vw;">自分のマナゾーン<br><small>(枠外ドラッグで削除)</small></div>
-            <!-- マナを起こすボタン：縦幅拡大＆二行表示に変更 -->
             <button class="btn-untap-all" onclick="untapAllMana()">すべてのマナを<br>起こす</button>
           </div>
         </div>
@@ -683,7 +671,7 @@
 
     let playerNames = ['P1', 'P2', 'P3'];
     let myName = '';
-    let cardFolder = 'card-bl'; // デフォルト
+    let cardFolder = 'card-bl';
 
     peer.on('open', (id) => {
       myId = id;
@@ -748,10 +736,8 @@
       conn.on('open', () => {
         if (isHost && assignedIndex > 0) {
           conn.send({ type: 'INIT_PLAYER', payload: { index: assignedIndex } });
-          // 名前登録要求を送信
           conn.send({ type: 'REQUEST_NAME' });
         } else if (!isHost) {
-          // ホストに自分の名前を送る
           conn.send({ type: 'SEND_NAME', payload: { name: myName } });
         }
       });
@@ -1113,9 +1099,9 @@
     }
 
     let playerStates = [
-      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0 },
-      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0 },
-      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0 }
+      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0, leftLifeCount: 8, rightLifeCount: 8 },
+      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0, leftLifeCount: 8, rightLifeCount: 8 },
+      { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0, leftLifeCount: 8, rightLifeCount: 8 }
     ];
 
     function handleNetworkMessage(data, senderConn) {
@@ -1222,7 +1208,6 @@
         if (idx === 0 && !isSelf) titleText = `◀ ${pName}`;
         if (idx === 2 && !isSelf) titleText = `${pName} ▶`;
 
-        /* マナの総数横に各色のマナ数を色のついた数字で併記する仕様を追加 */
         html += `
           <div class="score-group">
             <span class="score-p-title ${titleClass}">${titleText}</span>
@@ -1435,10 +1420,6 @@
         const zone = document.getElementById(`${pKey}-lock-zone`);
         zone.innerHTML = '';
         
-        // 7列×3行（計21マス）構成のグリッドを作成
-        // 1行目: 0=左ライフ, 1〜5=空枠, 6=右ライフ
-        // 2行目: 7〜13 (表示 1〜7)
-        // 3行目: 14〜20 (表示 8〜14)
         for (let i = 0; i < 21; i++) {
           const slot = document.createElement('div');
           slot.className = 'lock-slot';
@@ -1460,6 +1441,26 @@
           zone.appendChild(slot);
         }
       });
+    }
+
+    function updateLockSlotsLifeText() {
+      const p2Index = (myPlayerIndex + 1) % 3;
+      const p3Index = (myPlayerIndex + 2) % 3;
+
+      const p2Zone = document.getElementById('p2-lock-zone');
+      const p3Zone = document.getElementById('p3-lock-zone');
+
+      if (p2Zone) {
+        const p2Slots = p2Zone.querySelectorAll('.lock-slot');
+        if (p2Slots[0]) p2Slots[0].innerText = `右ライフ: ${playerStates[p2Index].rightLifeCount}`;
+        if (p2Slots[6]) p2Slots[6].innerText = `左ライフ: ${playerStates[p2Index].leftLifeCount}`;
+      }
+
+      if (p3Zone) {
+        const p3Slots = p3Zone.querySelectorAll('.lock-slot');
+        if (p3Slots[0]) p3Slots[0].innerText = `右ライフ: ${playerStates[p3Index].rightLifeCount}`;
+        if (p3Slots[6]) p3Slots[6].innerText = `左ライフ: ${playerStates[p3Index].leftLifeCount}`;
+      }
     }
 
     function getDisplayTarget(ownerIndex) {
@@ -1512,7 +1513,6 @@
       return closestSlot;
     }
 
-    /* 固定枠スロット内のカード位置計算（マスの完全中央へ配置されるよう修正） */
     function getSlotPosition(slotOwnerIndex, slotIndex, cardId) {
       const table = document.getElementById('zone-table');
       const tableRect = table.getBoundingClientRect();
@@ -1587,6 +1587,9 @@
     function updateLifeStatus() {
       document.getElementById('left-life-count').innerText = lifeDecks.left.length;
       document.getElementById('right-life-count').innerText = lifeDecks.right.length;
+      playerStates[myPlayerIndex].leftLifeCount = lifeDecks.left.length;
+      playerStates[myPlayerIndex].rightLifeCount = lifeDecks.right.length;
+      broadcastPlayerState();
     }
 
     function broadcastPlayerState() {
@@ -1595,7 +1598,6 @@
       playerStates[myPlayerIndex].gyCount = graveyards[myPlayerIndex].length;
       playerStates[myPlayerIndex].manaCount = localManaList.length;
 
-      // 各色マナ数の計算
       const colors = { red: 0, yellow: 0, blue: 0, purple: 0 };
       localManaList.forEach(m => {
         if (colors[m.color] !== undefined) colors[m.color]++;
@@ -1620,7 +1622,6 @@
         const manaEl = document.getElementById(`p${pNum}-mana-count`);
         if (manaEl) manaEl.innerText = st.manaCount;
 
-        /* 各色のマナ数表示更新 */
         const mColors = st.manaColors || { red: 0, yellow: 0, blue: 0, purple: 0 };
         const redEl = document.getElementById(`p${pNum}-mana-red`);
         if (redEl) redEl.innerText = mColors.red;
@@ -1648,11 +1649,12 @@
       document.getElementById('p3-deck-count-overlay').innerText = playerStates[p3Index].deckCount;
       document.getElementById('p3-gy-count-overlay').innerText = playerStates[p3Index].gyCount;
 
-      // 墓地タブのラベル更新
       for (let i = 0; i < 3; i++) {
         const btn = document.getElementById(`gy-tab-p${i}`);
         if (btn) btn.innerText = playerNames[i] || `P${i + 1}`;
       }
+
+      updateLockSlotsLifeText();
     }
 
     function drawCard() {
@@ -1665,7 +1667,7 @@
     function revealTopDeckCard() {
       if (deckCards.length === 0) return alert('デッキが空です');
       currentRevealedLifeCard = deckCards.pop();
-      targetLifeSlotIndex = null; // デッキからめくった場合は中央配置
+      targetLifeSlotIndex = null;
       updateDeckStatus();
 
       document.getElementById('modal-card-img').src = currentRevealedLifeCard.img;
@@ -2017,7 +2019,7 @@
       const pool = lifeDecks[side];
       if (pool.length === 0) return alert(`${side === 'left' ? '左' : '右'}のライフデッキが空です`);
       currentRevealedLifeCard = pool.pop();
-      targetLifeSlotIndex = (side === 'left') ? 0 : 6; // 手前固定枠の左ライフ(0)または右ライフ(6)スロットに指定
+      targetLifeSlotIndex = (side === 'left') ? 0 : 6;
       updateLifeStatus();
 
       document.getElementById('modal-card-img').src = currentRevealedLifeCard.img;
@@ -2048,168 +2050,15 @@
 
       currentRevealedLifeCard = null;
       targetLifeSlotIndex = null;
+
       broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
       syncBoardCardLocal(cardData);
     }
 
-    function handleTableDrop(e) {
-      e.preventDefault();
-      const cardDataStr = e.dataTransfer.getData('text/plain');
-      if (!cardDataStr) return;
-
-      try {
-        const data = JSON.parse(cardDataStr);
-        const card = data.card ? data.card : data;
-        const sourceType = data.sourceType;
-
-        if (sourceType === 'gy') {
-          const targetGy = graveyards[currentGyTab] || [];
-          const idx = targetGy.findIndex(c => c.id === card.id);
-          if (idx !== -1) {
-            targetGy.splice(idx, 1);
-            broadcastGraveyard(currentGyTab);
-          }
-        } else if (sourceType === 'deckSearch') {
-          const idx = deckCards.findIndex(c => c.id === card.id);
-          if (idx !== -1) {
-            deckCards.splice(idx, 1);
-            updateDeckStatus();
-            renderDeckSearchList();
-          }
-        }
-
-        const table = document.getElementById('zone-table');
-        const tableRect = table.getBoundingClientRect();
-        const posX = e.clientX - tableRect.left - (tableRect.width * 0.015);
-        const posY = e.clientY - tableRect.top - (tableRect.height * 0.0375);
-
-        const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-        const cardData = {
-          id: newCardId,
-          card: card,
-          ownerIndex: myPlayerIndex,
-          x: posX,
-          y: posY,
-          faceDown: false,
-          tapped: false,
-          slotOwnerIndex: null,
-          slotIndex: null
-        };
-
-        broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
-        syncBoardCardLocal(cardData);
-      } catch(err) {}
-    }
-
-    function refreshDeck() {
-      if (graveyards[myPlayerIndex].length === 0) {
-        return alert('墓地がありません');
-      }
-      deckCards = [...graveyards[myPlayerIndex]];
-      graveyards[myPlayerIndex] = [];
-      shuffle(deckCards);
-
-      for (let i = 0; i < 3; i++) {
-        if (deckCards.length > 0) {
-          addCardToHand(deckCards.pop());
-        }
-      }
-
-      updateDeckStatus();
-      broadcastGraveyard(myPlayerIndex);
-      broadcastPlayerState();
-    }
-
-    function spawnMana(color) {
-      const manaId = 'mana_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-      const manaObj = { id: manaId, color: color, tapped: false };
-      localManaList.push(manaObj);
-      renderManaZone();
-      broadcastPlayerState();
-    }
-
-    function renderManaZone() {
-      const manaZone = document.getElementById('mana-zone');
-      manaZone.querySelectorAll('.mana-card').forEach(m => m.remove());
-
-      localManaList.sort((a, b) => COLOR_ORDER[a.color] - COLOR_ORDER[b.color]);
-
-      localManaList.forEach((m, idx) => {
-        const mEl = document.createElement('div');
-        mEl.id = m.id;
-        mEl.className = `mana-card mana-${m.color}` + (m.tapped ? ' tapped' : '');
-        mEl.innerText = m.color.substring(0, 1).toUpperCase();
-        
-        /* マナの横幅・配置間隔を調整 */
-        mEl.style.left = `${1 + idx * 1.8}vw`;
-        mEl.style.top = `0.8vh`;
-
-        let isDragging = false, startX, startY;
-        let clickStartTime = 0;
-
-        mEl.onmousedown = (e) => {
-          clickStartTime = Date.now();
-          isDragging = true;
-          startX = e.clientX;
-          startY = e.clientY;
-
-          const onMM = (me) => {
-            if (!isDragging) return;
-            mEl.style.left = `${me.clientX - manaZone.getBoundingClientRect().left - 10}px`;
-            mEl.style.top = `${me.clientY - manaZone.getBoundingClientRect().top - 20}px`;
-          };
-
-          const onMU = (me) => {
-            if (!isDragging) return;
-            isDragging = false;
-            window.removeEventListener('mousemove', onMM);
-            window.removeEventListener('mouseup', onMU);
-
-            const duration = Date.now() - clickStartTime;
-            const dist = Math.hypot(me.clientX - startX, me.clientY - startY);
-
-            if (duration < 200 && dist < 5) {
-              m.tapped = !m.tapped;
-              renderManaZone();
-              return;
-            }
-
-            const zRect = manaZone.getBoundingClientRect();
-            if (me.clientX < zRect.left || me.clientX > zRect.right || me.clientY < zRect.top || me.clientY > zRect.bottom) {
-              localManaList = localManaList.filter(item => item.id !== m.id);
-              mEl.remove();
-              renderManaZone();
-              broadcastPlayerState();
-              return;
-            } else {
-              renderManaZone();
-            }
-          };
-
-          window.addEventListener('mousemove', onMM);
-          window.addEventListener('mouseup', onMU);
-        };
-
-        manaZone.appendChild(mEl);
-      });
-    }
-
-    function untapAllMana() {
-      localManaList.forEach(m => m.tapped = false);
-      renderManaZone();
-    }
-
-    /* トリニティカウンター上限を10（下限0）に設定 */
-    function updateTrinity(val) {
-      playerStates[myPlayerIndex].trinity = Math.min(10, Math.max(0, playerStates[myPlayerIndex].trinity + val));
-      document.getElementById('counter-num').innerText = playerStates[myPlayerIndex].trinity;
-      broadcastPlayerState();
-    }
-
-    function broadcastGraveyard(ownerIndex) {
+    function broadcastGraveyard(pIdx) {
       broadcast({
         type: 'SYNC_GRAVEYARD',
-        payload: { ownerIndex: ownerIndex, graveyard: graveyards[ownerIndex] }
+        payload: { ownerIndex: pIdx, graveyard: graveyards[pIdx] }
       });
       renderGraveyardList();
     }
@@ -2218,28 +2067,115 @@
       currentGyTab = pIdx;
       for (let i = 0; i < 3; i++) {
         const btn = document.getElementById(`gy-tab-p${i}`);
-        if (btn) btn.style.background = (i === currentGyTab) ? '#4f46e5' : '#334155';
+        if (btn) btn.style.background = (i === pIdx) ? '#4f46e5' : '#334155';
       }
       renderGraveyardList();
     }
 
     function renderGraveyardList() {
+      const listContainer = document.getElementById('graveyard-list');
+      if (!listContainer) return;
+      listContainer.innerHTML = '';
       document.getElementById('gy-count').innerText = graveyards[myPlayerIndex].length;
-      const container = document.getElementById('graveyard-list');
-      container.innerHTML = '';
 
-      const targetGy = graveyards[currentGyTab] || [];
-      targetGy.forEach((card) => {
-        const cEl = createCardElement(card);
-        cEl.style.height = '12vh';
-        const img = cEl.querySelector('img');
-        if (img) img.style.objectFit = 'contain';
+      const gy = graveyards[currentGyTab] || [];
+      gy.forEach((card, idx) => {
+        const cardEl = createCardElement(card);
+        cardEl.onclick = () => {
+          if (currentGyTab === myPlayerIndex) {
+            addCardToHand(card);
+            graveyards[myPlayerIndex].splice(idx, 1);
+            broadcastGraveyard(myPlayerIndex);
+            broadcastPlayerState();
+          }
+        };
+        listContainer.appendChild(cardEl);
+      });
+    }
 
-        cEl.ondragstart = (e) => {
-          e.dataTransfer.setData('text/plain', JSON.stringify({ card: card, sourceType: 'gy' }));
+    function updateTrinity(val) {
+      playerStates[myPlayerIndex].trinity = Math.max(0, (playerStates[myPlayerIndex].trinity || 0) + val);
+      document.getElementById('counter-num').innerText = playerStates[myPlayerIndex].trinity;
+      broadcastPlayerState();
+    }
+
+    function spawnMana(color) {
+      const manaObj = {
+        id: 'mana_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        color: color,
+        tapped: false
+      };
+      localManaList.push(manaObj);
+      renderManaZone();
+      broadcastPlayerState();
+    }
+
+    function untapAllMana() {
+      localManaList.forEach(m => m.tapped = false);
+      renderManaZone();
+      broadcastPlayerState();
+    }
+
+    function renderManaZone() {
+      const manaZone = document.getElementById('mana-zone');
+      const existingCards = manaZone.querySelectorAll('.mana-card');
+      existingCards.forEach(c => c.remove());
+
+      localManaList.sort((a, b) => COLOR_ORDER[a.color] - COLOR_ORDER[b.color]);
+
+      localManaList.forEach((m, idx) => {
+        const mEl = document.createElement('div');
+        mEl.className = `mana-card mana-${m.color}` + (m.tapped ? ' tapped' : '');
+        mEl.style.left = `${7 + idx * 2.2}vw`;
+        mEl.innerText = m.color === 'red' ? '赤' : m.color === 'yellow' ? '黄' : m.color === 'blue' ? '青' : '紫';
+
+        mEl.onclick = () => {
+          m.tapped = !m.tapped;
+          renderManaZone();
         };
 
-        container.appendChild(cEl);
+        mEl.onmousedown = (e) => {
+          let startY = e.clientY;
+          const onMouseMove = (me) => {
+            if (Math.abs(me.clientY - startY) > 40) {
+              localManaList = localManaList.filter(item => item.id !== m.id);
+              renderManaZone();
+              broadcastPlayerState();
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+            }
+          };
+          const onMouseUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+          };
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('mouseup', onMouseUp);
+        };
+
+        manaZone.appendChild(mEl);
+      });
+    }
+
+    function updateBarStageLocal(position, stage) {
+      const handle = document.getElementById(`handle-${position}`);
+      if (!handle) return;
+
+      const offsetsHorizontal = ['0%', '31%', '63%', '94%'];
+      const offsetsVertical = ['0%', '31%', '63%', '94%'];
+
+      if (position === 'top' || (position === 'left-p1' && myPlayerIndex === 2) || (position === 'right-p1' && myPlayerIndex === 1)) {
+        handle.style.left = offsetsHorizontal[stage - 1];
+      } else {
+        handle.style.top = offsetsVertical[stage - 1];
+      }
+    }
+
+    function setBarStage(position, stage) {
+      updateBarStageLocal(position, stage);
+      broadcast({
+        type: 'SYNC_BAR_STAGE',
+        payload: { position: position, stage: stage }
       });
     }
 
@@ -2256,49 +2192,29 @@
     function renderDeckSearchList() {
       const container = document.getElementById('deck-search-list');
       container.innerHTML = '';
-      
-      let searchList = [...deckCards];
-      shuffle(searchList);
+      let shuffledDeck = [...deckCards];
+      shuffle(shuffledDeck);
 
-      searchList.forEach(card => {
-        const cEl = createCardElement(card);
-        cEl.style.height = '12vh';
-        const img = cEl.querySelector('img');
-        if (img) img.style.objectFit = 'contain';
-
-        cEl.ondragstart = (e) => {
-          e.dataTransfer.setData('text/plain', JSON.stringify({ card: card, sourceType: 'deckSearch' }));
-        };
-
-        container.appendChild(cEl);
+      shuffledDeck.forEach(card => {
+        const cardEl = createCardElement(card, () => {
+          addCardToHand(card);
+          const idx = deckCards.findIndex(c => c.id === card.id);
+          if (idx !== -1) deckCards.splice(idx, 1);
+          updateDeckStatus();
+          renderDeckSearchList();
+        });
+        container.appendChild(cardEl);
       });
     }
 
-    /* 棒（ゲージ）位置の管理 */
-    let barStages = { 'top': 1, 'left-p1': 1, 'right-p1': 1 };
-
-    function setBarStage(posKey, stage) {
-      broadcast({ type: 'SYNC_BAR_STAGE', payload: { position: posKey, stage: stage } });
-      updateBarStageLocal(posKey, stage);
-    }
-
-    function updateBarStageLocal(posKey, stage) {
-      barStages[posKey] = stage;
-      const handle = document.getElementById(`handle-${posKey}`);
-      if (!handle) return;
-
-      const offsetsHorizontal = { 1: '0%', 2: '30%', 3: '65%', 4: '90%' };
-      const offsetsVertical = { 1: '0%', 2: '30%', 3: '65%', 4: '90%' };
-
-      const isVertical = handle.parentElement.parentElement.classList.contains('bar-vertical');
-      
-      if (isVertical) {
-        handle.style.top = offsetsVertical[stage];
-        handle.style.left = 'calc(50% - 1.9vw)';
-      } else {
-        handle.style.left = offsetsHorizontal[stage];
-        handle.style.top = 'calc(50% - 3.25vh)';
-      }
+    function refreshDeck() {
+      if (graveyards[myPlayerIndex].length === 0) return alert('墓地にカードがありません');
+      deckCards.push(...graveyards[myPlayerIndex]);
+      graveyards[myPlayerIndex] = [];
+      shuffle(deckCards);
+      updateDeckStatus();
+      broadcastGraveyard(myPlayerIndex);
+      broadcastPlayerState();
     }
   </script>
 </body>
