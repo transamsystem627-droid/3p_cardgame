@@ -222,9 +222,28 @@
     #refresh-btn { background: #10b981; margin-top: 0.4vh; width: 100%; display: none; }
     #refresh-btn:hover { background: #059669; }
 
-    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 10.5vh; position: relative; overflow: hidden; display: flex; align-items: center; padding-right: 9vw; }
+    /* マナゾーン：右側にボタンと被らないよう余裕を持たせ、溢れたら横スクロール可能に設定 */
+    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 10.5vh; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; align-items: center; padding-right: 9vw; }
     .mana-btn { padding: 0.4vh 0.6vw; font-size: 1.3vh; border-radius: 0.3vh; border: none; color: white; cursor: pointer; font-weight: bold; }
-    .mana-card { width: 2.8vw; height: 7vh; border-radius: 0.4vh; display: inline-flex; align-items: center; justify-content: center; font-size: 1.4vh; font-weight: bold; cursor: grab; user-select: none; position: absolute; box-shadow: 0 0.2vh 0.5vh rgba(0,0,0,0.5); z-index: 5; transition: transform 0.15s; }
+    
+    /* マナカード：横幅を狭く（1.8vw）、縦長（8vh）に設定。黒の外周フチを追加 */
+    .mana-card { 
+      width: 1.8vw; 
+      height: 8vh; 
+      border: 2px solid #000; 
+      border-radius: 0.4vh; 
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 1.2vh; 
+      font-weight: bold; 
+      cursor: grab; 
+      user-select: none; 
+      position: absolute; 
+      box-shadow: 0 0.2vh 0.5vh rgba(0,0,0,0.5); 
+      z-index: 5; 
+      transition: transform 0.15s; 
+    }
     .mana-card:active { cursor: grabbing; }
     .mana-red { background: #ef4444; color: #fff; }
     .mana-yellow { background: #eab308; color: #000; }
@@ -241,13 +260,26 @@
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
-    /* 手札・対戦中のカードサイズをさらに少し小さく変更 (3.4vw / 8.5vh -> 2.7vw / 6.8vh) */
+    /* カード要素 */
     .dummy-card {
       width: 2.7vw; height: 6.8vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
     .dummy-card img { width: 100%; height: 100%; object-fit: cover; }
+    
+    /* 手札エリアのカード設定：サイズを2倍に（5.4vw / 13.6vh）、画像の上半分のみ表示 */
+    #hand-cards .dummy-card {
+      width: 5.4vw;
+      height: 13.6vh;
+    }
+    #hand-cards .dummy-card img {
+      width: 100%;
+      height: 200%; /* 高さを2倍にして上半分を切り抜く */
+      object-fit: cover;
+      object-position: top;
+    }
+
     .placed-card { position: absolute; cursor: grab; z-index: 10; transition: transform 0.1s ease; }
     .placed-card:active { cursor: grabbing; }
     .card-face-down { background: #0f172a !important; border-color: #475569 !important; color: #64748b !important; }
@@ -278,9 +310,10 @@
     #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
     #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
 
-    #bottom-hand-panel { height: 14vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.6vh; display: flex; flex-direction: column; }
+    /* 手札エリア：カード拡大に合わせて高さ拡張（20vh）、溢れた場合に横スクロール可能に設定 */
+    #bottom-hand-panel { height: 20vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.6vh; display: flex; flex-direction: column; }
     #hand-cards { display: flex; gap: 0.5vw; overflow-x: auto; flex: 1; align-items: center; padding-top: 0.2vh; }
-    .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 0.4vh; }
+    .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 0.4vh; flex-shrink: 0; }
     
     .btn-facedown {
       padding: 0.3vh 0.5vw; font-size: 1.1vh; border: 0.1vh solid #475569; background: #1e293b;
@@ -327,7 +360,7 @@
       position: absolute; background: rgba(15, 23, 42, 0.7);
       border: 0.1vh solid #334155; border-radius: 1.2vh; display: flex; flex-direction: column; justify-content: center; padding: 0.6vh 0.8vw; z-index: 20;
     }
-    .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-content: space-between; align-items: center; }
+    .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-space-between; align-items: center; }
     .bar-node { width: 0.7vw; height: 0.7vw; max-width: 1vh; max-height: 1vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
     
     .movable-bar-handle {
@@ -2043,8 +2076,10 @@
         mEl.id = m.id;
         mEl.className = `mana-card mana-${m.color}` + (m.tapped ? ' tapped' : '');
         mEl.innerText = m.color.substring(0, 1).toUpperCase();
-        mEl.style.left = `${1 + idx * 3.2}vw`;
-        mEl.style.top = `1.5vh`;
+        
+        /* マナの横幅・配置間隔を調整 */
+        mEl.style.left = `${1 + idx * 2.2}vw`;
+        mEl.style.top = `1vh`;
 
         let isDragging = false, startX, startY;
         let clickStartTime = 0;
@@ -2057,7 +2092,7 @@
 
           const onMM = (me) => {
             if (!isDragging) return;
-            mEl.style.left = `${me.clientX - manaZone.getBoundingClientRect().left - 15}px`;
+            mEl.style.left = `${me.clientX - manaZone.getBoundingClientRect().left - 10}px`;
             mEl.style.top = `${me.clientY - manaZone.getBoundingClientRect().top - 20}px`;
           };
 
