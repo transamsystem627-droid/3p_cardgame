@@ -201,20 +201,6 @@
       border: 0.2vh solid #6366f1; border-radius: 0.8vh; padding: 0.6vh 1vw; box-shadow: 0 0 1.2vh rgba(99, 102, 241, 0.3);
       height: 5.5vh;
     }
-    .score-group { display: flex; align-items: center; gap: 0.6vw; font-size: 1.5vh; }
-    .score-p-title { font-weight: bold; font-size: 1.6vh; }
-    .score-p1-title { color: #818cf8; }
-    .score-p2-title { color: #38bdf8; }
-    .score-p3-title { color: #f43f5e; }
-    .score-box { display: flex; align-items: center; gap: 0.3vw; background: #1e293b; padding: 0.3vh 0.6vw; border-radius: 0.4vh; border: 0.1vh solid #475569; }
-    .score-label { color: #94a3b8; font-size: 1.3vh; }
-    .score-val { font-size: 1.6vh; font-weight: bold; color: #38bdf8; }
-
-    .mana-color-breakdown { display: flex; gap: 0.3vw; font-size: 1.3vh; font-weight: bold; margin-left: 0.2vw; }
-    .mc-red { color: #ef4444; }
-    .mc-yellow { color: #eab308; }
-    .mc-blue { color: #3b82f6; }
-    .mc-purple { color: #a855f7; }
 
     #main-board { display: grid; grid-template-columns: 11vw 1fr; gap: 0.6vw; flex: 1; min-height: 0; }
     .zone { border: 0.2vh dashed #475569; border-radius: 0.8vh; padding: 0.6vh; background: #0f172a; position: relative; }
@@ -228,30 +214,6 @@
 
     #mana-zone { border-color: #3b82f6; background: #091e3a; height: 8.5vh; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; align-items: center; padding-right: 9vw; }
     .mana-btn { padding: 0.4vh 0.6vw; font-size: 1.3vh; border-radius: 0.3vh; border: none; color: white; cursor: pointer; font-weight: bold; }
-    
-    .mana-card { 
-      width: 1.95vw; 
-      height: 6.5vh; 
-      border: 2px solid #000; 
-      border-radius: 0.4vh; 
-      display: inline-flex; 
-      align-items: center; 
-      justify-content: center; 
-      font-size: 1.2vh; 
-      font-weight: bold; 
-      cursor: grab; 
-      user-select: none; 
-      position: absolute; 
-      box-shadow: 0 0.2vh 0.5vh rgba(0,0,0,0.5); 
-      z-index: 5; 
-      transition: transform 0.15s; 
-    }
-    .mana-card:active { cursor: grabbing; }
-    .mana-red { background: #ef4444; color: #fff; }
-    .mana-yellow { background: #eab308; color: #000; }
-    .mana-blue { background: #3b82f6; color: #fff; }
-    .mana-purple { background: #a855f7; color: #fff; }
-    .mana-card.tapped { transform: rotate(90deg); }
 
     .btn-untap-all {
       position: absolute; right: 0.5vw; top: 50%; transform: translateY(-50%);
@@ -260,39 +222,6 @@
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); transition: 0.2s; text-align: center; line-height: 1.3;
     }
     .btn-untap-all:hover { background: #7dd3fc; }
-
-    /* 共有エリアの配置カードサイズを少し縮小 (旧: 3.6vw × 9.0vh → 新: 3.2vw × 8.0vh) */
-    .dummy-card {
-      width: 3.2vw; height: 8.0vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
-      box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .dummy-card img { width: 100%; height: 100%; object-fit: contain; }
-    
-    /* 手札エリアのカード設定 */
-    #hand-cards .dummy-card {
-      height: 11.8vh;
-      width: calc(11.8vh * 5 / 7);
-    }
-    #hand-cards .dummy-card img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      object-position: center;
-    }
-
-    .placed-card { position: absolute; cursor: grab; z-index: 10; transition: transform 0.1s ease; }
-    .placed-card:active { cursor: grabbing; }
-    .card-face-down { background: #0f172a !important; border-color: #475569 !important; color: #64748b !important; }
-    .card-face-down img { display: none; }
-    
-    .orient-p0 { border-color: #818cf8; }
-    .orient-p1 { border-color: #38bdf8; }
-    .orient-p2 { border-color: #f43f5e; }
-    
-    .card-rot-p2 { transform: rotate(160deg); }
-    .card-rot-p3 { transform: rotate(-160deg); }
-    .card-tapped { transform: rotate(90deg) !important; }
 
     .left-action-zone { 
       width: 100%; 
@@ -314,92 +243,31 @@
     /* 手札エリア */
     #bottom-hand-panel { height: 16vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.4vh 0.6vh; display: flex; flex-direction: column; position: relative; }
     #hand-cards { display: flex; gap: 0.5vw; overflow-x: auto; flex: 1; align-items: center; padding-top: 0.2vh; }
-    .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 0.2vh; flex-shrink: 0; }
-    
-    .btn-facedown {
-      padding: 0.2vh 0.4vw; font-size: 1.0vh; border: 0.1vh solid #475569; background: #1e293b;
-      color: #cbd5e1; border-radius: 0.4vh; cursor: grab; user-select: none; transition: 0.15s; font-weight: bold;
-    }
-    .btn-facedown:hover { background: #334155; color: #38bdf8; border-color: #38bdf8; }
-    .btn-facedown:active { cursor: grabbing; }
 
     /* サイドコンテナ */
     #side-container { position: absolute; right: 0.8vw; top: 1vh; width: 8.5vw; height: 96vh; display: flex; flex-direction: column; gap: 0.8vh; z-index: 200; pointer-events: none; }
     .tray-panel { background: rgba(15, 23, 42, 0.95); border-radius: 0.8vh; padding: 0.8vh; display: flex; flex-direction: column; pointer-events: auto; }
     .tray-list { display: flex; flex-direction: column; gap: 0.6vh; overflow-y: auto; flex: 1; padding-right: 0.2vw; }
 
-    /* デッキ内検索オーバーレイ：カードを大きく（11vh→18vh）＆左詰めに修正 */
     #deck-search-overlay {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: calc(100% - 9.5vw);
-      height: 25.5vh;
-      background: rgba(15, 23, 42, 0.98);
-      border: 0.2vh solid #0ea5e9;
-      border-radius: 0.8vh;
-      z-index: 500;
-      display: none;
-      flex-direction: column;
-      padding: 0.6vh 0.8vw;
-      box-shadow: 0 -0.5vh 2vh rgba(0, 0, 0, 0.8);
+      position: absolute; bottom: 0; left: 0; width: calc(100% - 9.5vw); height: 25.5vh;
+      background: rgba(15, 23, 42, 0.98); border: 0.2vh solid #0ea5e9; border-radius: 0.8vh;
+      z-index: 500; display: none; flex-direction: column; padding: 0.6vh 0.8vw; box-shadow: 0 -0.5vh 2vh rgba(0, 0, 0, 0.8);
     }
     #deck-search-list-horizontal {
-      display: flex;
-      flex-direction: row;
-      gap: 0.8vw;
-      overflow-x: auto;
-      overflow-y: hidden;
-      flex: 1;
-      padding: 0.4vh 0;
-      align-items: center;
-      justify-content: flex-start;
-    }
-    #deck-search-list-horizontal .card-item {
-      height: 18vh;
-      width: calc(18vh * 2 / 3);
-      flex-shrink: 0;
+      display: flex; flex-direction: row; gap: 0.8vw; overflow-x: auto; overflow-y: hidden;
+      flex: 1; padding: 0.4vh 0; align-items: center; justify-content: flex-start;
     }
 
     #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    /* 墓地一覧のプレイヤー名ボタンを縦並びに修正 */
-    #graveyard-tabs {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4vh;
-      margin-bottom: 0.6vh;
-    }
-    #graveyard-tabs .game-btn {
-      width: 100%;
-      flex: none;
-    }
+    #graveyard-tabs { display: flex; flex-direction: column; gap: 0.4vh; margin-bottom: 0.6vh; }
+    #graveyard-tabs .game-btn { width: 100%; flex: none; }
 
-    /* すべてのカード固定枠の縦幅を37vwに修正 */
     .lock-slot-container {
       position: absolute; width: 30vw; height: 37vw; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(3, 1fr); gap: 0.3vw; padding: 0.5vh; z-index: 2; pointer-events: auto;
     }
-    /* 固定枠の一マスの縦幅を少しだけ長く（100%→108%）修正 */
-    .lock-slot {
-      width: 100%; height: 108%; border: 0.1vh dashed #475569; border-radius: 0.5vh;
-      display: flex; align-items: center; justify-content: center; font-size: 1.1vh; color: #64748b; text-align: center;
-      background: rgba(15, 23, 42, 0.3); transition: border-color 0.15s; font-weight: bold;
-    }
-    .lock-slot.empty-slot {
-      border: none; background: transparent; pointer-events: none;
-    }
-    .lock-slot.life-slot {
-      border-color: #38bdf8; color: #38bdf8; background: rgba(56, 189, 248, 0.1);
-      display: flex; align-items: center; justify-content: center; gap: 0.2vw; padding: 0.1vw;
-    }
-    
-    .btn-life-flip {
-      background: #38bdf8; color: #0f172a; border: none; border-radius: 0.3vh;
-      padding: 0.2vh 0.3vw; font-size: 0.9vh; font-weight: bold; cursor: pointer;
-      white-space: nowrap; flex-shrink: 0;
-    }
-    .btn-life-flip:hover { background: #7dd3fc; }
 
     #p1-lock-zone { bottom: 0.2vh; left: 50%; transform: translateX(-50%); }
     #p2-lock-zone { top: 9.5vh; left: 1%; transform: rotate(160deg); transform-origin: center center; }
@@ -417,7 +285,6 @@
       position: absolute; background: rgba(15, 23, 42, 0.7);
       border: 0.1vh solid #334155; border-radius: 1.2vh; display: flex; flex-direction: column; justify-content: center; padding: 0.6vh 0.8vw; z-index: 20;
     }
-    /* 共有プレイエリア上部の棒の4段階ノード間隔を均等に修正 (space-between) */
     .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-content: space-between; align-items: center; }
     .bar-node { width: 0.7vw; height: 0.7vw; max-width: 1vh; max-height: 1vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
     
@@ -437,7 +304,6 @@
 
     #track-left-p1 { bottom: 2vh; left: 20%; transform-origin: center center; transform: rotate(-15deg); }
     #track-right-p1 { bottom: 2vh; right: 20%; transform-origin: center center; transform: rotate(15deg); }
-    .bar-flip { transform: rotate(180deg); }
 
     .counter-box { margin-top: 0.4vh; padding: 0.4vh; background: #1e1b4b; border: 0.1vh solid #6366f1; border-radius: 0.6vh; text-align: center; }
     .counter-btn { width: 1.8vw; height: 1.8vw; max-width: 2.5vh; max-height: 2.5vh; padding: 0; font-weight: bold; font-size: 1.4vh; border-radius: 0.4vh; background: #4f46e5; color: #fff; border: none; cursor: pointer; }
@@ -545,11 +411,11 @@
         <span>獲得カードプール (クリックでメインへ)</span>
         <span id="pool-count" style="color:#38bdf8;">39枚</span>
       </div>
-      <div id="pool-cards" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="handleDrop(event, 'pool')"></div>
+      <div id="pool-cards"></div>
     </div>
 
     <div id="decks-section">
-      <div class="deck-drop-zone" id="main-deck-zone" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="handleDrop(event, 'main')">
+      <div class="deck-drop-zone" id="main-deck-zone">
         <div class="section-title">
           <span>メインデッキ（クリックでプールへ）</span>
           <span style="color:#f59e0b;"><span id="main-deck-num">0</span> / 23 枚</span>
@@ -607,7 +473,7 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.6vh;">
-          <div class="zone" id="zone-table" style="flex: 1; position:relative;" ondragover="allowDrop(event)" ondrop="handleTableDrop(event)">
+          <div class="zone" id="zone-table" style="flex: 1; position:relative;">
             <div id="p2-overlay-info" class="opponent-overlay-info">
               <div id="p2-overlay-title" style="font-weight:bold; color:#38bdf8; margin-bottom:0.2vh;">プレイヤー 2</div>
               手札: <span id="p2-hand-count-overlay" style="color:#fff; font-weight:bold;">0</span> 枚 | 
@@ -707,7 +573,81 @@
 </div>
 
 <script>
-  /* JS内：棒の移動位置計算ロジック（4段階を均等ノードの位置に合わせて配置） */
+  let peer = null;
+  let myPeerId = null;
+
+  // 初期化関数：PeerJS接続開始
+  window.addEventListener('load', () => {
+    initPeer();
+  });
+
+  function initPeer() {
+    const statusElem = document.getElementById('lobby-status');
+    const idElem = document.getElementById('my-peer-id');
+
+    // PeerJS インスタンスを作成
+    peer = new Peer();
+
+    peer.on('open', (id) => {
+      myPeerId = id;
+      idElem.textContent = id;
+      statusElem.textContent = "IDの発行が完了しました。名前を入力して部屋を作成するか参加してください。";
+    });
+
+    peer.on('error', (err) => {
+      console.error(err);
+      idElem.textContent = "発行失敗";
+      statusElem.textContent = "IDの発行に失敗しました。ページをリロードしてください。: " + err.type;
+    });
+  }
+
+  function limitPlayerName(val) {
+    return val.slice(0, 12);
+  }
+
+  function copyMyId() {
+    if (!myPeerId) return;
+    navigator.clipboard.writeText(myPeerId).then(() => {
+      alert("IDをコピーしました: " + myPeerId);
+    }).catch(err => {
+      alert("コピーに失敗しました。");
+    });
+  }
+
+  function createRoom() {
+    const name = document.getElementById('player-name-input').value.trim();
+    if (!name) {
+      alert("プレイヤー名を入力してください。");
+      return;
+    }
+    document.getElementById('mode-select-modal').style.display = 'flex';
+  }
+
+  function joinRoom() {
+    const name = document.getElementById('player-name-input').value.trim();
+    const hostId = document.getElementById('host-id-input').value.trim();
+    if (!name) {
+      alert("プレイヤー名を入力してください。");
+      return;
+    }
+    if (!hostId) {
+      alert("ホストのIDを入力してください。");
+      return;
+    }
+    document.getElementById('lobby-status').textContent = "ホストに接続中...";
+  }
+
+  function selectCardMode(mode) {
+    document.getElementById('mode-select-modal').style.display = 'none';
+    document.getElementById('lobby-view').style.display = 'none';
+    alert("モード " + mode + " で部屋を作成しました。");
+  }
+
+  // 棒の移動位置計算ロジック
+  function setBarStage(pos, stage) {
+    updateBarStageLocal(pos, stage);
+  }
+
   function updateBarStageLocal(pos, stage) {
     const handle = document.getElementById(`handle-${pos}`);
     const track = document.getElementById(`track-${pos}`);
@@ -730,6 +670,23 @@
       handle.style.top = 'calc(50% - 3.25vh)';
     }
   }
+
+  // スタブ関数群
+  function confirmPick() {}
+  function allowDrop(e) { e.preventDefault(); }
+  function leaveDrop(e) {}
+  function handleDrop(e, zone) {}
+  function confirmDeckReady() {}
+  function drawCard() {}
+  function revealTopDeckCard() {}
+  function refreshDeck() {}
+  function toggleDeckSearch() {}
+  function spawnMana(color) {}
+  function updateTrinity(val) {}
+  function handleTableDrop(e) {}
+  function untapAllMana() {}
+  function switchGyTab(idx) {}
+  function placeLifeCardToField() {}
 </script>
 </body>
 </html>
