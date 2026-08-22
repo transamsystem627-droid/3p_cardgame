@@ -262,9 +262,9 @@
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
-    /* カード枠サイズ設定 */
+    /* カード枠サイズ設定（修正要件：共有プレイエリアのカードサイズを縮小 4.0vw×10.0vh → 3.7vw×9.3vh） */
     .dummy-card {
-      width: 4.0vw; height: 10.0vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
+      width: 3.7vw; height: 9.3vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
@@ -335,7 +335,7 @@
       bottom: 0;
       left: 0;
       width: calc(100% - 9.5vw);
-      height: 25.5vh;
+      height: 32vh;
       background: rgba(15, 23, 42, 0.98);
       border: 0.2vh solid #0ea5e9;
       border-radius: 0.8vh;
@@ -355,18 +355,21 @@
       flex: 1;
       padding: 0.4vh 0;
       align-items: center;
+      justify-content: flex-start;
+      justify-items: start;
     }
+    /* 修正要件：デッキ内検索のカードサイズを拡大 9.5vh×(2/3) → 13vh×(2/3) */
     #deck-search-list-horizontal .card-item {
-      height: 9.5vh;
-      width: calc(9.5vh * 2 / 3);
+      height: 13vh;
+      width: calc(13vh * 2 / 3);
       flex-shrink: 0;
     }
 
     #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
-    /* 修正要件：カード固定枠のマスのサイズを横幅30vw、縦幅42vw(42vh)に修正 */
+    /* 修正要件：カード固定枠のマスのサイズを横幅30vw、縦幅37vwに修正 */
     .lock-slot-container {
-      position: absolute; width: 30vw; height: 42vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
+      position: absolute; width: 30vw; height: 37vw; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(3, 1fr); gap: 0.3vw; padding: 0.5vh; z-index: 2; pointer-events: auto;
     }
@@ -406,7 +409,7 @@
       position: absolute; background: rgba(15, 23, 42, 0.7);
       border: 0.1vh solid #334155; border-radius: 1.2vh; display: flex; flex-direction: column; justify-content: center; padding: 0.6vh 0.8vw; z-index: 20;
     }
-    .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-space-between; align-items: center; }
+    .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-content: space-between; align-items: center; }
     .bar-node { width: 0.7vw; height: 0.7vw; max-width: 1vh; max-height: 1vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
     
     .movable-bar-handle {
@@ -448,7 +451,7 @@
       </p>
       
       <div class="input-group">
-        <input type="text" id="player-name-input" placeholder="あなたのプレイヤー名を入力">
+        <input type="text" id="player-name-input" placeholder="あなたのプレイヤー名を入力（全角6文字/半角12文字まで）">
         <button id="btn-create-room" class="btn-primary" onclick="createRoom()">ホストとして部屋を作成</button>
       </div>
       
@@ -672,10 +675,10 @@
     <div id="side-container">
       <div id="graveyard-tray" class="tray-panel">
         <div style="font-size:1.3vh; color:#a78bfa; margin-bottom:0.4vh; text-align:center; font-weight:bold;">墓地一覧</div>
-        <div style="display:flex; gap:0.2vw; margin-bottom:0.6vh;">
-          <button class="game-btn" onclick="switchGyTab(0)" id="gy-tab-p0" style="flex:1; font-size:1.2vh; background:#4f46e5;">P1</button>
-          <button class="game-btn" onclick="switchGyTab(1)" id="gy-tab-p1" style="flex:1; font-size:1.2vh; background:#334155;">P2</button>
-          <button class="game-btn" onclick="switchGyTab(2)" id="gy-tab-p2" style="flex:1; font-size:1.2vh; background:#334155;">P3</button>
+        <div style="display:flex; flex-direction:column; gap:0.3vh; margin-bottom:0.6vh;">
+          <button class="game-btn" onclick="switchGyTab(0)" id="gy-tab-p0" style="width:100%; font-size:1.2vh; background:#4f46e5;">P1</button>
+          <button class="game-btn" onclick="switchGyTab(1)" id="gy-tab-p1" style="width:100%; font-size:1.2vh; background:#334155;">P2</button>
+          <button class="game-btn" onclick="switchGyTab(2)" id="gy-tab-p2" style="width:100%; font-size:1.2vh; background:#334155;">P3</button>
         </div>
         <div id="graveyard-list" class="tray-list"></div>
       </div>
@@ -731,9 +734,37 @@
       document.getElementById('lobby-status').innerText = msg;
     }
 
+    /* 修正要件：設定できる名前の文字数を全角6文字、半角12文字に制限 */
+    const MAX_NAME_WEIGHT = 12; // 全角(2)×6文字 or 半角(1)×12文字 相当
+    function getNameWeight(str) {
+      let weight = 0;
+      for (const ch of str) {
+        const code = ch.codePointAt(0);
+        // 半角英数記号・半角カタカナは1、それ以外(全角)は2としてカウント
+        const isHalfWidth = (code >= 0x0020 && code <= 0x007E) || (code >= 0xFF61 && code <= 0xFF9F);
+        weight += isHalfWidth ? 1 : 2;
+      }
+      return weight;
+    }
+    function isNameLengthValid(str) {
+      return getNameWeight(str) <= MAX_NAME_WEIGHT;
+    }
+    (function setupNameInputLimit() {
+      const el = document.getElementById('player-name-input');
+      if (!el) return;
+      el.addEventListener('input', () => {
+        let val = el.value;
+        while (getNameWeight(val) > MAX_NAME_WEIGHT) {
+          val = val.slice(0, -1);
+        }
+        el.value = val;
+      });
+    })();
+
     function createRoom() {
       const nameInput = document.getElementById('player-name-input').value.trim();
       if (!nameInput) return alert('プレイヤー名を入力してください');
+      if (!isNameLengthValid(nameInput)) return alert('プレイヤー名は全角6文字（半角12文字）以内で入力してください');
       myName = nameInput;
       playerNames[0] = myName;
 
@@ -745,6 +776,7 @@
     function joinRoom() {
       const nameInput = document.getElementById('player-name-input').value.trim();
       if (!nameInput) return alert('プレイヤー名を入力してください');
+      if (!isNameLengthValid(nameInput)) return alert('プレイヤー名は全角6文字（半角12文字）以内で入力してください');
       myName = nameInput;
 
       const hostId = document.getElementById('host-id-input').value.trim();
