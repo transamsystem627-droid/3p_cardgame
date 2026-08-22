@@ -264,7 +264,7 @@
 
     /* カード枠サイズ設定 */
     .dummy-card {
-      width: 4.0vw; height: 10.0vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
+      width: 3.6vw; height: 9.0vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
@@ -354,19 +354,31 @@
       overflow-y: hidden;
       flex: 1;
       padding: 0.4vh 0;
-      align-items: center;
+      align-items: start;
+      justify-content: start;
+      align-content: start;
     }
     #deck-search-list-horizontal .card-item {
-      height: 9.5vh;
-      width: calc(9.5vh * 2 / 3);
+      height: 11vh;
+      width: calc(11vh * 2 / 3);
       flex-shrink: 0;
     }
 
     #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    #graveyard-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4vh;
+      margin-bottom: 0.6vh;
+    }
+    #graveyard-tabs .game-btn {
+      width: 100%;
+      flex: none;
+    }
 
-    /* 修正要件：カード固定枠のマスのサイズを横幅30vw、縦幅42vw(42vh)に修正 */
+    /* 修正要件：すべてのカード固定枠の縦幅を37vwに修正 */
     .lock-slot-container {
-      position: absolute; width: 30vw; height: 42vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
+      position: absolute; width: 30vw; height: 37vw; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(3, 1fr); gap: 0.3vw; padding: 0.5vh; z-index: 2; pointer-events: auto;
     }
@@ -448,7 +460,7 @@
       </p>
       
       <div class="input-group">
-        <input type="text" id="player-name-input" placeholder="あなたのプレイヤー名を入力">
+        <input type="text" id="player-name-input" placeholder="あなたのプレイヤー名を入力" maxlength="12" oninput="this.value=limitPlayerName(this.value)">
         <button id="btn-create-room" class="btn-primary" onclick="createRoom()">ホストとして部屋を作成</button>
       </div>
       
@@ -672,10 +684,10 @@
     <div id="side-container">
       <div id="graveyard-tray" class="tray-panel">
         <div style="font-size:1.3vh; color:#a78bfa; margin-bottom:0.4vh; text-align:center; font-weight:bold;">墓地一覧</div>
-        <div style="display:flex; gap:0.2vw; margin-bottom:0.6vh;">
-          <button class="game-btn" onclick="switchGyTab(0)" id="gy-tab-p0" style="flex:1; font-size:1.2vh; background:#4f46e5;">P1</button>
-          <button class="game-btn" onclick="switchGyTab(1)" id="gy-tab-p1" style="flex:1; font-size:1.2vh; background:#334155;">P2</button>
-          <button class="game-btn" onclick="switchGyTab(2)" id="gy-tab-p2" style="flex:1; font-size:1.2vh; background:#334155;">P3</button>
+        <div id="graveyard-tabs">
+          <button class="game-btn" onclick="switchGyTab(0)" id="gy-tab-p0" style="font-size:1.2vh; background:#4f46e5;">P1</button>
+          <button class="game-btn" onclick="switchGyTab(1)" id="gy-tab-p1" style="font-size:1.2vh; background:#334155;">P2</button>
+          <button class="game-btn" onclick="switchGyTab(2)" id="gy-tab-p2" style="font-size:1.2vh; background:#334155;">P3</button>
         </div>
         <div id="graveyard-list" class="tray-list"></div>
       </div>
@@ -731,8 +743,29 @@
       document.getElementById('lobby-status').innerText = msg;
     }
 
+    /* プレイヤー名：半角1文字=1、全角1文字=2として合計12幅まで
+       （全角6文字 / 半角12文字を上限とする） */
+    function getPlayerNameCharWidth(ch) {
+      const code = ch.codePointAt(0);
+      return (code <= 0x00ff || (code >= 0xff61 && code <= 0xff9f)) ? 1 : 2;
+    }
+
+    function limitPlayerName(value) {
+      let result = '';
+      let width = 0;
+      for (const ch of value) {
+        const charWidth = getPlayerNameCharWidth(ch);
+        if (width + charWidth > 12) break;
+        result += ch;
+        width += charWidth;
+      }
+      return result;
+    }
+
     function createRoom() {
-      const nameInput = document.getElementById('player-name-input').value.trim();
+      const input = document.getElementById('player-name-input');
+      const nameInput = limitPlayerName(input.value.trim());
+      input.value = nameInput;
       if (!nameInput) return alert('プレイヤー名を入力してください');
       myName = nameInput;
       playerNames[0] = myName;
@@ -743,7 +776,9 @@
     }
 
     function joinRoom() {
-      const nameInput = document.getElementById('player-name-input').value.trim();
+      const input = document.getElementById('player-name-input');
+      const nameInput = limitPlayerName(input.value.trim());
+      input.value = nameInput;
       if (!nameInput) return alert('プレイヤー名を入力してください');
       myName = nameInput;
 
@@ -1397,14 +1432,22 @@
       const track = document.getElementById(`track-${pos}`);
       if (!handle || !track) return;
 
+      // 4段階を「棒全体の33.33%」ではなく、実際の4つの目盛りの中心座標に合わせる。
+      // プレイヤーごとの回転・縦横切り替え後も、各段階が等間隔になる。
+      const nodes = Array.from(track.querySelectorAll('.bar-node'));
+      const index = Math.max(0, Math.min(nodes.length - 1, Number(stage) - 1));
+      const node = nodes[index];
+      if (!node) return;
+
       const isVertical = track.classList.contains('bar-vertical');
-      const percentage = (stage - 1) * 33.33;
+      const nodeCenterX = node.offsetLeft + (node.offsetWidth / 2);
+      const nodeCenterY = node.offsetTop + (node.offsetHeight / 2);
 
       if (isVertical) {
         handle.style.left = 'calc(50% - 1.9vw)';
-        handle.style.top = `calc(${percentage}% - 1.25vh)`;
+        handle.style.top = `${nodeCenterY - (handle.offsetHeight / 2)}px`;
       } else {
-        handle.style.left = `calc(${percentage}% - 0.75vw)`;
+        handle.style.left = `${nodeCenterX - (handle.offsetWidth / 2)}px`;
         handle.style.top = 'calc(50% - 3.25vh)';
       }
     }
