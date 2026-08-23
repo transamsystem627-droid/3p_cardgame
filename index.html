@@ -262,9 +262,9 @@
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
-    /* カード枠サイズ設定（修正要件：共有プレイエリアのカードサイズを縮小 4.0vw×10.0vh → 3.4vw×9.3vh） */
+    /* カード枠サイズ設定（修正要件：共有プレイエリアのカードサイズをさらに少し縮小 3.7vw×9.3vh → 3.5vw×8.8vh） */
     .dummy-card {
-      width: 3.4vw; height: 9.3vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
+      width: 3.5vw; height: 8.8vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
@@ -367,9 +367,9 @@
 
     #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
-    /* 修正要件：カード固定枠のマスのサイズを横幅30vw、縦幅40vhに修正 */
+    /* 修正要件：カード固定枠のマスのサイズを横幅30vw、縦幅33vhに修正 */
     .lock-slot-container {
-      position: absolute; width: 30vw; height: 40vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
+      position: absolute; width: 30vw; height: 33vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(3, 1fr); gap: 0.3vw; padding: 0.5vh; z-index: 2; pointer-events: auto;
     }
@@ -1851,6 +1851,8 @@
 
       const placedEl = document.getElementById(newCardId);
       if (placedEl) {
+        // 修正要件：手札から出した直後のカードは、共有プレイエリア外にドロップされた場合に手札へ戻せるよう目印を付ける
+        placedEl.dataset.fromHand = 'true';
         placedEl.dispatchEvent(new MouseEvent('mousedown', {
           clientX: e.clientX,
           clientY: e.clientY,
@@ -1958,7 +1960,7 @@
 
     function setupPlacedCardInteraction(cardEl, initialData) {
       let isDragging = false;
-      let startX, startY, origX, origY;
+      let startX, startY, origX, origY, origSlotOwner, origSlotIdx;
       let clickStartTime = 0;
 
       cardEl.onmouseenter = (e) => {
@@ -1985,6 +1987,9 @@
         startY = e.clientY;
         origX = parseFloat(cardEl.style.left) || 0;
         origY = parseFloat(cardEl.style.top) || 0;
+        // 修正要件：元の位置に戻せるよう、ドラッグ開始時点のスロット情報も記録
+        origSlotOwner = cardEl.getAttribute('data-slot-owner') !== '' ? parseInt(cardEl.getAttribute('data-slot-owner')) : null;
+        origSlotIdx = cardEl.getAttribute('data-slot-idx') !== '' ? parseInt(cardEl.getAttribute('data-slot-idx')) : null;
 
         const onMouseMove = (me) => {
           if (!isDragging) return;
@@ -2091,6 +2096,30 @@
             broadcastPlayerState();
             return;
           }
+
+          /* 修正要件：手札・墓地・獲得ライフに追加・デッキに戻す・デッキの一番下に戻す以外の場所で、
+             かつ共有プレイエリア(zone-table)の外にドロップされた場合は元の位置に戻す */
+          const tableRectNow = document.getElementById('zone-table').getBoundingClientRect();
+          const insideSharedArea = me.clientX >= tableRectNow.left && me.clientX <= tableRectNow.right && me.clientY >= tableRectNow.top && me.clientY <= tableRectNow.bottom;
+
+          if (!insideSharedArea) {
+            if (cardEl.dataset.fromHand === 'true') {
+              // 手札から出したばかりのカードは手札に戻す
+              addCardToHand(cardEl.cardDataObj);
+              removeBoardCard(cardEl.id);
+            } else {
+              // 元々場に出ていたカードは元の位置（元のスロット）に戻す
+              const revertData = {
+                id: cardEl.id, x: origX, y: origY,
+                slotOwnerIndex: origSlotOwner, slotIndex: origSlotIdx,
+                zIndex: highestZIndex
+              };
+              broadcast({ type: 'MOVE_BOARD_CARD', payload: revertData });
+              moveBoardCardLocal(revertData);
+            }
+            return;
+          }
+          delete cardEl.dataset.fromHand;
 
           const closest = findClosestSlot(me.clientX, me.clientY);
           let finalSlotOwner = null;
