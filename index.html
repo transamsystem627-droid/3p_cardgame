@@ -264,7 +264,7 @@
 
     /* カード枠サイズ設定（修正要件：共有プレイエリアのカードサイズをさらに少し縮小 3.7vw×9.3vh → 3.5vw×8.8vh） */
     .dummy-card {
-      width: 3.3vw; height: 8.4vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
+      width: 3.5vw; height: 8.8vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
@@ -369,7 +369,7 @@
 
     /* 修正要件：カード固定枠のマスのサイズを横幅30vw、縦幅33vhに修正 */
     .lock-slot-container {
-      position: absolute; width: 30vw; height: 30vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
+      position: absolute; width: 30vw; height: 33vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(3, 1fr); gap: 0.3vw; padding: 0.5vh; z-index: 2; pointer-events: auto;
     }
@@ -435,6 +435,53 @@
 
     #life-reveal-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(0.6vh); }
     #modal-card { width: 25vw; height: 65vh; background: #020617; border: 0.4vh solid #38bdf8; border-radius: 1.6vh; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 1vh; overflow: hidden; }
+
+    /* 修正要件：接続状態バナー */
+    #conn-status-banner {
+      position: absolute; top: 0.6vh; left: 50%; transform: translateX(-50%);
+      background: rgba(127, 29, 29, 0.95); border: 0.15vh solid #ef4444; border-radius: 0.6vh;
+      padding: 0.5vh 1.2vw; font-size: 1.3vh; font-weight: bold; color: #fecaca;
+      z-index: 6000; display: none; box-shadow: 0 0.4vh 1vh rgba(0,0,0,0.6); white-space: nowrap;
+    }
+    #conn-status-banner.ok { background: rgba(6, 78, 59, 0.95); border-color: #10b981; color: #d1fae5; }
+
+    /* 修正要件：直前操作の取り消し(Undo)ボタン */
+    #undo-btn {
+      position: absolute; top: 0.6vh; right: 10vw;
+      padding: 0.6vh 0.9vw; background: #f59e0b; color: #451a03; font-weight: bold;
+      font-size: 1.2vh; border: none; border-radius: 0.5vh; cursor: pointer; z-index: 5000;
+      box-shadow: 0 0.3vh 0.8vh rgba(0,0,0,0.5); display: none;
+    }
+    #undo-btn:hover { background: #fbbf24; }
+
+    /* 修正要件：アクションログ／チャットのトースト表示 */
+    #action-log-toast {
+      position: absolute; top: 3.2vh; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; gap: 0.3vh; align-items: center;
+      z-index: 4500; pointer-events: none; width: 30vw;
+    }
+    .action-log-item {
+      background: rgba(15, 23, 42, 0.92); border: 0.1vh solid #38bdf8; border-radius: 0.6vh;
+      padding: 0.4vh 1vw; font-size: 1.15vh; color: #e2e8f0; text-align: center;
+      box-shadow: 0 0.4vh 1vh rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s ease;
+      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .action-log-item.show { opacity: 1; }
+    .action-log-item.chat { border-color: #f59e0b; color: #fde68a; }
+
+    /* 修正要件：簡易チャット欄 */
+    #chat-tray { flex-shrink: 0; margin-top: 0.6vh; }
+    #chat-tray .chat-row { display: flex; gap: 0.3vw; }
+    #chat-input {
+      flex: 1; font-size: 1.1vh; padding: 0.4vh 0.5vw; border-radius: 0.3vh;
+      border: 0.1vh solid #475569; background: #0f172a; color: #fff;
+    }
+
+    /* 修正要件：ロビー画面のセッション復帰ボタン */
+    #resume-session-box {
+      display: none; margin-top: 1.5vh; padding-top: 1.5vh; border-top: 0.1vh solid #334155;
+    }
+    #resume-session-box p { font-size: 1.4vh; color: #94a3b8; margin-bottom: 0.8vh; }
     #modal-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 0.8vh; }
   </style>
 </head>
@@ -463,6 +510,11 @@
       </div>
 
       <div id="lobby-status" class="lobby-status">名前を入力し、部屋を作成するか参加してください。</div>
+
+      <div id="resume-session-box">
+        <p>前回の続きがあります</p>
+        <button class="btn-primary" style="background:#10b981;" onclick="resumeSession()">前回のセッションに復帰する</button>
+      </div>
     </div>
   </div>
 
@@ -682,6 +734,14 @@
         </div>
         <div id="graveyard-list" class="tray-list"></div>
       </div>
+
+      <div id="chat-tray" class="tray-panel">
+        <div style="font-size:1.2vh; color:#38bdf8; margin-bottom:0.3vh; text-align:center; font-weight:bold;">簡易チャット</div>
+        <div class="chat-row">
+          <input type="text" id="chat-input" placeholder="メッセージ" onkeydown="if(event.key==='Enter') sendChatMessage();">
+          <button class="game-btn" style="padding:0.4vh 0.6vw; font-size:1.1vh;" onclick="sendChatMessage()">送信</button>
+        </div>
+      </div>
     </div>
 
     <div id="life-reveal-modal">
@@ -689,6 +749,11 @@
         <img id="modal-card-img" src="" alt="">
       </div>
     </div>
+
+    <!-- 修正要件：接続状態バナー・Undoボタン・アクションログ -->
+    <div id="conn-status-banner"></div>
+    <button id="undo-btn" onclick="undoLastAction()">元に戻す</button>
+    <div id="action-log-toast"></div>
   </div>
 
   <div id="pass-notice">全員決定！パックを回転します ➔</div>
@@ -699,20 +764,61 @@
 
   <script>
     /* ネットワーク通信 (PeerJS) */
-    let peer = new Peer();
+    const SESSION_KEY = 'trinity_ttp_session_v1';
+    const MAX_RECONNECT_ATTEMPTS = 8;
+
+    function loadSession() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        if (!obj || !obj.savedAt) return null;
+        if (Date.now() - obj.savedAt > 1000 * 60 * 60 * 6) return null; // 6時間で失効
+        return obj;
+      } catch (e) { return null; }
+    }
+    function clearSession() {
+      try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+    }
+
+    let savedSession = loadSession();
+
     let myId = '';
     let isHost = false;
-    let myPlayerIndex = 0; 
-    let connections = [];
+    let myPlayerIndex = 0;
+    // 修正要件：再接続時に同じ枠へ戻せるよう、connectionsはプレイヤー番号固定のスロット方式に変更(0は未使用/ホスト自身)
+    let connections = [null, null, null];
     let hostConn = null;
+    let lastKnownHostId = null;
+    let everConnectedOnce = false;
+    let reconnectAttempts = 0;
+    let reconnectTimer = null;
+    let autoSaveTimer = null;
+    let currentPhase = 'lobby'; // 'lobby' | 'draft' | 'deckbuilder' | 'battle'
+    let barStageState = { top: 1, 'left-p1': 1, 'right-p1': 1 };
 
     let playerNames = ['P1', 'P2', 'P3'];
     let myName = '';
     let cardFolder = 'card-bl';
 
+    // 修正要件：ホストが同端末でリロード/クラッシュしても同じIDに復帰できるよう、
+    // 保存済みセッションがホストのものであれば同じPeer IDを再取得する
+    let peer = (savedSession && savedSession.isHost && savedSession.hostId)
+      ? new Peer(savedSession.hostId)
+      : new Peer();
+
     peer.on('open', (id) => {
       myId = id;
       document.getElementById('my-peer-id').innerText = id;
+    });
+
+    peer.on('error', (err) => {
+      console.error('Peer error', err);
+      if (err && err.type === 'unavailable-id') {
+        updateLobbyStatus('前回のセッションIDがまだ解放されていません。数秒後にページを再読み込みして「復帰する」をお試しください。');
+      } else if (!isHost && lastKnownHostId) {
+        scheduleReconnect();
+      }
     });
 
     function copyMyId() {
@@ -733,6 +839,13 @@
     function updateLobbyStatus(msg) {
       document.getElementById('lobby-status').innerText = msg;
     }
+
+    /* 修正要件：セッション復帰ボタンの表示 */
+    (function setupResumeBox() {
+      if (!savedSession) return;
+      const box = document.getElementById('resume-session-box');
+      if (box) box.style.display = 'block';
+    })();
 
     /* 修正要件：設定できる名前の文字数を全角6文字、半角12文字に制限 */
     const MAX_NAME_WEIGHT = 12; // 全角(2)×6文字 or 半角(1)×12文字 相当
@@ -771,6 +884,7 @@
       isHost = true;
       myPlayerIndex = 0;
       updateLobbyStatus(`部屋を作成しました (${myName})。他のプレイヤーの接続を待っています... (1/3)`);
+      startAutoSaveLoop();
     }
 
     function joinRoom() {
@@ -782,33 +896,157 @@
       const hostId = document.getElementById('host-id-input').value.trim();
       if (!hostId) return alert('ホストIDを入力してください');
       isHost = false;
+      lastKnownHostId = hostId;
       updateLobbyStatus('ホストに接続中...');
       hostConn = peer.connect(hostId);
-      setupConnection(hostConn, -1);
+      attachHostConnHandlers();
+      startAutoSaveLoop();
     }
 
-    peer.on('connection', (conn) => {
-      if (!isHost) return;
-      if (connections.length >= 2) {
-        conn.close();
+    /* 修正要件：セッション復帰 */
+    function resumeSession() {
+      if (!savedSession) return;
+      const s = savedSession;
+
+      if (s.phase === 'draft' || s.phase === 'deckbuilder') {
+        updateLobbyStatus('ドラフト／デッキ構築中のセッションの復帰には対応していません。お手数ですが最初からやり直してください。');
+        clearSession();
+        savedSession = null;
+        const box = document.getElementById('resume-session-box');
+        if (box) box.style.display = 'none';
         return;
       }
-      connections.push(conn);
-      const assignedIndex = connections.length;
-      setupConnection(conn, assignedIndex);
+
+      myName = s.myName;
+      isHost = s.isHost;
+      myPlayerIndex = s.myPlayerIndex;
+      cardFolder = s.cardFolder || 'card-bl';
+      if (s.playerNames) playerNames = s.playerNames;
+      lastKnownHostId = s.hostId;
+
+      const box = document.getElementById('resume-session-box');
+      if (box) box.style.display = 'none';
+
+      if (s.private) applyPrivateSnapshot(s.private);
+
+      if (isHost) {
+        playerNames[0] = myName;
+        updateLobbyStatus('セッションを復帰しています。他のプレイヤーの再接続を待っています...');
+        if (s.phase === 'battle' && s.public) {
+          applyPublicSnapshot(s.public);
+          enterBattleViewOnly();
+        }
+      } else {
+        updateLobbyStatus('ホストに再接続しています...');
+        if (s.phase === 'battle') {
+          enterBattleViewOnly();
+        }
+        hostConn = peer.connect(s.hostId);
+        attachHostConnHandlers();
+      }
+      startAutoSaveLoop();
+    }
+
+    function enterBattleViewOnly() {
+      document.getElementById('lobby-view').style.display = 'none';
+      document.getElementById('draft-view').style.display = 'none';
+      document.getElementById('deck-builder-view').style.display = 'none';
+      document.getElementById('battle-view').style.display = 'flex';
+      document.getElementById('header-bar').style.display = 'none';
+      currentPhase = 'battle';
+      createAllLockSlots();
+      adjustPerspectiveBarLayout();
+      renderScoreBar();
+      updateDeckStatus();
+      updateLifeStatus();
+    }
+
+    /* 修正要件：ホスト側 - 新規接続の受け付け（枠が空いていれば再接続として認識） */
+    peer.on('connection', (conn) => {
+      if (!isHost) return;
+      conn.on('data', (data) => handleNetworkMessage(data, conn));
+      conn.on('close', () => handleHostSideConnLost(conn));
+      conn.on('error', () => handleHostSideConnLost(conn));
     });
 
-    function setupConnection(conn, assignedIndex) {
-      conn.on('open', () => {
-        if (isHost && assignedIndex > 0) {
-          conn.send({ type: 'INIT_PLAYER', payload: { index: assignedIndex } });
-          conn.send({ type: 'REQUEST_NAME' });
-        } else if (!isHost) {
-          conn.send({ type: 'SEND_NAME', payload: { name: myName } });
-        }
-      });
+    function handleHostSideConnLost(conn) {
+      const idx = connections.indexOf(conn);
+      if (idx !== -1) {
+        connections[idx] = null;
+        updateConnStatusBanner();
+        broadcastLog(`${playerNames[idx] || 'プレイヤー' + idx}との接続が切れました。再接続を待っています…`);
+      }
+    }
 
-      conn.on('data', (data) => handleNetworkMessage(data, conn));
+    /* 修正要件：クライアント側 - ホストとの接続確立/切断/自動再接続 */
+    function attachHostConnHandlers() {
+      hostConn.on('open', () => {
+        clearTimeout(reconnectTimer);
+        reconnectAttempts = 0;
+        lastKnownHostId = hostConn.peer;
+        if (everConnectedOnce) {
+          setConnBanner('ホストに再接続しました', 'ok');
+          setTimeout(hideConnBanner, 2500);
+        } else {
+          hideConnBanner();
+        }
+        everConnectedOnce = true;
+        hostConn.send({ type: 'HELLO', payload: { name: myName, resumeIndex: getSavedResumeIndex() } });
+      });
+      hostConn.on('data', (data) => handleNetworkMessage(data, hostConn));
+      hostConn.on('close', () => scheduleReconnect());
+      hostConn.on('error', () => scheduleReconnect());
+    }
+
+    function getSavedResumeIndex() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return null;
+        const s = JSON.parse(raw);
+        if (s && !s.isHost && s.hostId === (hostConn && hostConn.peer) && typeof s.myPlayerIndex === 'number') {
+          return s.myPlayerIndex;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    function scheduleReconnect() {
+      if (isHost || !lastKnownHostId) return;
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        setConnBanner('ホストに接続できませんでした。ページを再読み込みしてやり直してください。', 'bad');
+        return;
+      }
+      reconnectAttempts++;
+      setConnBanner(`ホストとの接続が切れました。再接続を試みています…(${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`, 'bad');
+      clearTimeout(reconnectTimer);
+      const delay = Math.min(1500 * reconnectAttempts, 8000);
+      reconnectTimer = setTimeout(() => {
+        if (isHost || !peer || peer.destroyed) return;
+        hostConn = peer.connect(lastKnownHostId);
+        attachHostConnHandlers();
+      }, delay);
+    }
+
+    function setConnBanner(msg, kind) {
+      const el = document.getElementById('conn-status-banner');
+      if (!el) return;
+      el.innerText = msg;
+      el.classList.toggle('ok', kind === 'ok');
+      el.style.display = 'block';
+    }
+    function hideConnBanner() {
+      const el = document.getElementById('conn-status-banner');
+      if (el) el.style.display = 'none';
+    }
+    function updateConnStatusBanner() {
+      if (!isHost) return;
+      const missing = [1, 2].filter(i => !connections[i] || !connections[i].open);
+      if (missing.length === 0) {
+        hideConnBanner();
+      } else {
+        const names = missing.map(i => playerNames[i] || `プレイヤー${i + 1}`).join('、');
+        setConnBanner(`${names} との接続が切れています。再接続を待っています…`, 'bad');
+      }
     }
 
     function broadcast(data, senderConn = null) {
@@ -825,6 +1063,101 @@
         handleNetworkMessage(data, null);
         if (hostConn && hostConn.open) hostConn.send(data);
       }
+    }
+
+    /* 修正要件：セッションの保存/復元（ホストの同端末リロード復帰・クライアント再接続用） */
+    function currentPhaseName() { return currentPhase; }
+
+    function buildPrivateSnapshot() {
+      const handCards = Array.from(document.querySelectorAll('#hand-cards .dummy-card'))
+        .map(el => el.__cardRef).filter(Boolean);
+      return {
+        deckCards, lifeDecks, localManaList,
+        myGraveyard: graveyards[myPlayerIndex],
+        myPlayerState: playerStates[myPlayerIndex],
+        handCards
+      };
+    }
+
+    function applyPrivateSnapshot(p) {
+      if (!p) return;
+      deckCards = p.deckCards || [];
+      lifeDecks = p.lifeDecks || { left: [], right: [] };
+      localManaList = p.localManaList || [];
+      if (p.myGraveyard) graveyards[myPlayerIndex] = p.myGraveyard;
+      if (p.myPlayerState) playerStates[myPlayerIndex] = Object.assign({}, playerStates[myPlayerIndex], p.myPlayerState);
+
+      const handContainer = document.getElementById('hand-cards');
+      if (handContainer) handContainer.innerHTML = '';
+      (p.handCards || []).forEach(card => addCardToHand(card));
+
+      renderManaZone();
+      updateDeckStatus();
+      updateLifeStatus();
+    }
+
+    function buildBoardCardsSnapshot() {
+      const table = document.getElementById('zone-table');
+      if (!table) return [];
+      return Array.from(table.querySelectorAll('.placed-card')).map(el => ({
+        id: el.id,
+        card: el.cardDataObj,
+        ownerIndex: parseInt(el.getAttribute('data-owner')),
+        faceDown: el.getAttribute('data-facedown') === 'true',
+        tapped: el.getAttribute('data-tapped') === 'true',
+        slotOwnerIndex: el.getAttribute('data-slot-owner') !== '' ? parseInt(el.getAttribute('data-slot-owner')) : null,
+        slotIndex: el.getAttribute('data-slot-idx') !== '' ? parseInt(el.getAttribute('data-slot-idx')) : null,
+        x: parseFloat(el.style.left) || 0,
+        y: parseFloat(el.style.top) || 0,
+        zIndex: parseInt(el.style.zIndex) || 10
+      }));
+    }
+
+    function buildPublicSnapshot() {
+      return {
+        playerNames, cardFolder,
+        playerStates, graveyards,
+        boardCards: buildBoardCardsSnapshot(),
+        barStages: Object.assign({}, barStageState)
+      };
+    }
+
+    function applyPublicSnapshot(pub) {
+      if (!pub) return;
+      if (pub.playerNames) playerNames = pub.playerNames;
+      if (pub.cardFolder) cardFolder = pub.cardFolder;
+      if (pub.playerStates) playerStates = pub.playerStates;
+      if (pub.graveyards) graveyards = pub.graveyards;
+      document.querySelectorAll('.placed-card').forEach(el => el.remove());
+      (pub.boardCards || []).forEach(data => syncBoardCardLocal(data));
+      if (pub.barStages) {
+        Object.keys(pub.barStages).forEach(pos => updateBarStageLocal(pos, pub.barStages[pos]));
+      }
+      updateAllPlayerStatsDisplay();
+      renderGraveyardList();
+    }
+
+    function saveSession() {
+      if (currentPhase === 'lobby' && !myName) return;
+      if (isHost && !myId) return; // Peer IDがまだ発行されていない場合は保存しない
+      try {
+        const session = {
+          savedAt: Date.now(),
+          isHost, myPlayerIndex, myName,
+          hostId: isHost ? myId : lastKnownHostId,
+          cardFolder, playerNames,
+          phase: currentPhase,
+          private: (currentPhase === 'battle') ? buildPrivateSnapshot() : null,
+          public: (isHost && currentPhase === 'battle') ? buildPublicSnapshot() : null
+        };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      } catch (e) { /* 保存できなくても致命的ではないため無視 */ }
+    }
+
+    function startAutoSaveLoop() {
+      clearInterval(autoSaveTimer);
+      autoSaveTimer = setInterval(saveSession, 5000);
+      window.addEventListener('beforeunload', saveSession);
     }
 
     /* ドラフト関連データ */
@@ -904,6 +1237,7 @@
 
     function initDraftLocal(allPacks, names) {
       document.getElementById('lobby-view').style.display = 'none';
+      currentPhase = 'draft';
       if (names) playerNames = names;
       roundPacksPool = allPacks;
       startRound(1);
@@ -1037,6 +1371,7 @@
 
     /* デッキ構築フェーズ */
     function initDeckBuilder() {
+      currentPhase = 'deckbuilder';
       document.getElementById('draft-view').style.display = 'none';
       document.getElementById('deck-builder-view').style.display = 'flex';
       document.getElementById('phase-title').innerText = '🛠 デッキ構築フェーズ';
@@ -1144,6 +1479,8 @@
     }
 
     function confirmDeckReady() {
+      // 修正要件：確定後は編集できない取り消せない操作のため実行前に確認する
+      if (!confirm('デッキを確定します。確定後は編集できません。よろしいですか？')) return;
       playerDeckReady[myPlayerIndex] = true;
       document.getElementById('start-game-btn').disabled = true;
       document.getElementById('start-game-btn').innerText = '他のプレイヤーの準備待機中...';
@@ -1183,23 +1520,47 @@
         case 'INIT_PLAYER':
           myPlayerIndex = data.payload.index;
           break;
-        case 'REQUEST_NAME':
-          if (hostConn && hostConn.open) {
-            hostConn.send({ type: 'SEND_NAME', payload: { name: myName } });
+        case 'HELLO': {
+          // 修正要件：新規参加/再接続の受付。resumeIndexが空いていればその枠に復帰させる
+          if (!isHost || !senderConn) break;
+          let assignIndex = null;
+          const resumeIndex = data.payload.resumeIndex;
+          if ((resumeIndex === 1 || resumeIndex === 2) && (!connections[resumeIndex] || !connections[resumeIndex].open)) {
+            assignIndex = resumeIndex;
+          }
+          if (assignIndex === null) {
+            if (!connections[1] || !connections[1].open) assignIndex = 1;
+            else if (!connections[2] || !connections[2].open) assignIndex = 2;
+          }
+          if (assignIndex === null) {
+            senderConn.send({ type: 'ROOM_FULL' });
+            setTimeout(() => senderConn.close(), 300);
+            break;
+          }
+          connections[assignIndex] = senderConn;
+          playerNames[assignIndex] = data.payload.name || playerNames[assignIndex] || `P${assignIndex + 1}`;
+          senderConn.send({ type: 'INIT_PLAYER', payload: { index: assignIndex } });
+          updateConnStatusBanner();
+          updateLobbyStatus(`プレイヤーが参加しました (${playerNames.filter(n => n).length}/3)\n${playerNames.join(', ')}`);
+          broadcastLog(`${playerNames[assignIndex]}が接続しました`);
+
+          if (currentPhase !== 'lobby') {
+            // ゲーム開始後の(再)接続 → 公開状態をまとめて送って追いつかせる
+            senderConn.send({ type: 'RESYNC_STATE', payload: buildPublicSnapshot() });
+          } else if (connections[1] && connections[1].open && connections[2] && connections[2].open && playerNames.filter(n => n).length === 3) {
+            updateLobbyStatus('全員揃いました！カードモードを選択してください...');
+            openModeSelectModal();
           }
           break;
-        case 'SEND_NAME':
-          if (isHost && senderConn) {
-            const senderIdx = connections.indexOf(senderConn) + 1;
-            if (senderIdx > 0) {
-              playerNames[senderIdx] = data.payload.name;
-              updateLobbyStatus(`プレイヤーが参加しました (${playerNames.filter(n=>n).length}/3)\n${playerNames.join(', ')}`);
-              
-              if (connections.length === 2 && playerNames.filter(n=>n).length === 3) {
-                updateLobbyStatus('全員揃いました！カードモードを選択してください...');
-                openModeSelectModal();
-              }
-            }
+        }
+        case 'ROOM_FULL':
+          updateLobbyStatus('この部屋はすでに満員です。');
+          break;
+        case 'RESYNC_STATE':
+          // 修正要件：再接続時にホストから届く公開状態(場のカード・墓地・スコア等)を反映
+          applyPublicSnapshot(data.payload);
+          if (currentPhase !== 'battle') {
+            enterBattleViewOnly();
           }
           break;
         case 'SET_CARD_MODE':
@@ -1249,6 +1610,12 @@
           break;
         case 'SYNC_BAR_STAGE':
           updateBarStageLocal(data.payload.position, data.payload.stage);
+          break;
+        case 'ACTION_LOG':
+          logAction(data.payload.message);
+          break;
+        case 'CHAT':
+          logAction(`${data.payload.name}: ${data.payload.message}`, true);
           break;
       }
     }
@@ -1425,6 +1792,7 @@
     }
 
     function updateBarStageLocal(pos, stage) {
+      barStageState[pos] = stage; // 修正要件：セッション復帰用に現在の段階を記録
       const handle = document.getElementById(`handle-${pos}`);
       const track = document.getElementById(`track-${pos}`);
       if (!handle || !track) return;
@@ -1658,6 +2026,7 @@
     }
 
     function startGame() {
+      currentPhase = 'battle';
       document.getElementById('deck-builder-view').style.display = 'none';
       document.getElementById('battle-view').style.display = 'flex';
       document.getElementById('header-bar').style.display = 'none';
@@ -1777,6 +2146,12 @@
       const card = deckCards.pop();
       addCardToHand(card);
       updateDeckStatus();
+      broadcastLog(`${myDisplayName()}がカードを1枚引きました`);
+      recordUndo('カードを引く', () => {
+        removeCardFromHandByRef(card);
+        deckCards.push(card);
+        updateDeckStatus();
+      });
     }
 
     function revealTopDeckCard() {
@@ -1798,12 +2173,15 @@
       cardEl.className = 'dummy-card';
       cardEl.style.cursor = 'grab';
       cardEl.innerHTML = `<img src="${card.img}" alt="card">`;
+      cardEl.__cardRef = card; // 修正要件：セッション復帰時の手札スナップショット用に参照を保持
 
       cardEl.onmouseenter = (e) => showPreview(card, e);
       cardEl.onmousemove = (e) => movePreview(e);
       cardEl.onmouseleave = () => hidePreview();
 
       cardEl.onmousedown = (e) => startHandCardDrag(e, card, wrapper, false);
+      // 修正要件：裏で出す(右クリック)操作でブラウザ標準の右クリックメニューが出ないよう抑止
+      cardEl.oncontextmenu = (e) => e.preventDefault();
 
       const faceDownBtn = document.createElement('button');
       faceDownBtn.className = 'btn-facedown';
@@ -1812,6 +2190,7 @@
         e.stopPropagation();
         startHandCardDrag(e, card, wrapper, true);
       };
+      faceDownBtn.oncontextmenu = (e) => e.preventDefault();
 
       wrapper.appendChild(cardEl);
       wrapper.appendChild(faceDownBtn);
@@ -1963,6 +2342,8 @@
       let startX, startY, origX, origY, origSlotOwner, origSlotIdx;
       let clickStartTime = 0;
 
+      cardEl.oncontextmenu = (e) => e.preventDefault();
+
       cardEl.onmouseenter = (e) => {
         const isFaceDown = cardEl.getAttribute('data-facedown') === 'true';
         const ownerIdx = parseInt(cardEl.getAttribute('data-owner'));
@@ -2055,10 +2436,26 @@
             return;
           }
 
+          // 修正要件：Undo用に、ドロップ処理でカードが場から取り除かれる前の状態を記録
+          const captureSnap = () => ({
+            card: cardEl.cardDataObj,
+            ownerIndex: parseInt(cardEl.getAttribute('data-owner')),
+            faceDown: cardEl.getAttribute('data-facedown') === 'true',
+            tapped: cardEl.getAttribute('data-tapped') === 'true',
+            x: origX, y: origY,
+            slotOwnerIndex: origSlotOwner, slotIndex: origSlotIdx
+          });
+
           const handPanel = document.getElementById('bottom-hand-panel').getBoundingClientRect();
           if (me.clientX >= handPanel.left && me.clientX <= handPanel.right && me.clientY >= handPanel.top && me.clientY <= handPanel.bottom) {
+            const snap = captureSnap();
             addCardToHand(cardEl.cardDataObj);
             removeBoardCard(cardEl.id);
+            broadcastLog(`${myDisplayName()}がカードを手札に戻しました`);
+            recordUndo('手札へ戻す', () => {
+              removeCardFromHandByRef(snap.card);
+              restoreCardToBoard(snap);
+            });
             return;
           }
 
@@ -2068,32 +2465,64 @@
           const gyZone = document.getElementById('graveyard-zone').getBoundingClientRect();
 
           if (me.clientX >= scoreZone.left && me.clientX <= scoreZone.right && me.clientY >= scoreZone.top && me.clientY <= scoreZone.bottom) {
+            const snap = captureSnap();
             playerStates[myPlayerIndex].lifeScore += 1;
             removeBoardCard(cardEl.id);
             broadcastPlayerState();
+            broadcastLog(`${myDisplayName()}が獲得ライフに追加しました`);
+            recordUndo('獲得ライフに追加', () => {
+              playerStates[myPlayerIndex].lifeScore -= 1;
+              restoreCardToBoard(snap);
+              broadcastPlayerState();
+            });
             return;
           }
 
           if (me.clientX >= returnZone.left && me.clientX <= returnZone.right && me.clientY >= returnZone.top && me.clientY <= returnZone.bottom) {
+            const snap = captureSnap();
             deckCards.push(cardEl.cardDataObj);
             shuffle(deckCards);
             removeBoardCard(cardEl.id);
             updateDeckStatus();
+            broadcastLog(`${myDisplayName()}がカードをデッキに戻しました`);
+            recordUndo('デッキに戻す', () => {
+              const idx = deckCards.indexOf(snap.card);
+              if (idx !== -1) deckCards.splice(idx, 1);
+              updateDeckStatus();
+              restoreCardToBoard(snap);
+            });
             return;
           }
 
           if (me.clientX >= returnBottomZone.left && me.clientX <= returnBottomZone.right && me.clientY >= returnBottomZone.top && me.clientY <= returnBottomZone.bottom) {
+            const snap = captureSnap();
             deckCards.unshift(cardEl.cardDataObj);
             removeBoardCard(cardEl.id);
             updateDeckStatus();
+            broadcastLog(`${myDisplayName()}がカードをデッキの一番下に戻しました`);
+            recordUndo('デッキの一番下に戻す', () => {
+              const idx = deckCards.indexOf(snap.card);
+              if (idx !== -1) deckCards.splice(idx, 1);
+              updateDeckStatus();
+              restoreCardToBoard(snap);
+            });
             return;
           }
 
           if (me.clientX >= gyZone.left && me.clientX <= gyZone.right && me.clientY >= gyZone.top && me.clientY <= gyZone.bottom) {
+            const snap = captureSnap();
             graveyards[myPlayerIndex].push(cardEl.cardDataObj);
             removeBoardCard(cardEl.id);
             broadcastGraveyard(myPlayerIndex);
             broadcastPlayerState();
+            broadcastLog(`${myDisplayName()}がカードを墓地へ送りました`);
+            recordUndo('墓地へ送る', () => {
+              const idx = graveyards[myPlayerIndex].indexOf(snap.card);
+              if (idx !== -1) graveyards[myPlayerIndex].splice(idx, 1);
+              broadcastGraveyard(myPlayerIndex);
+              broadcastPlayerState();
+              restoreCardToBoard(snap);
+            });
             return;
           }
 
@@ -2207,6 +2636,96 @@
       if (cardEl) cardEl.remove();
     }
 
+    /* 修正要件：アクションログ／簡易チャット */
+    function myDisplayName() {
+      return playerNames[myPlayerIndex] || myName || `P${myPlayerIndex + 1}`;
+    }
+
+    function broadcastLog(msg) {
+      broadcast({ type: 'ACTION_LOG', payload: { message: msg } });
+    }
+
+    function logAction(msg, isChat = false) {
+      const container = document.getElementById('action-log-toast');
+      if (!container) return;
+      const item = document.createElement('div');
+      item.className = 'action-log-item' + (isChat ? ' chat' : '');
+      item.innerText = msg;
+      container.appendChild(item);
+      requestAnimationFrame(() => item.classList.add('show'));
+      setTimeout(() => {
+        item.classList.remove('show');
+        setTimeout(() => item.remove(), 350);
+      }, 3200);
+      while (container.children.length > 4) {
+        container.removeChild(container.firstChild);
+      }
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      if (!input) return;
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      broadcast({ type: 'CHAT', payload: { name: myDisplayName(), message: msg } });
+    }
+
+    /* 修正要件：直前操作の取り消し(Undo) */
+    let lastUndoAction = null;
+    let undoHideTimer = null;
+
+    function recordUndo(label, undoFn) {
+      lastUndoAction = { label, undoFn };
+      const btn = document.getElementById('undo-btn');
+      if (btn) {
+        btn.innerText = `元に戻す（${label}）`;
+        btn.style.display = 'block';
+      }
+      clearTimeout(undoHideTimer);
+      undoHideTimer = setTimeout(() => clearUndo(), 15000);
+    }
+
+    function clearUndo() {
+      lastUndoAction = null;
+      const btn = document.getElementById('undo-btn');
+      if (btn) btn.style.display = 'none';
+    }
+
+    function undoLastAction() {
+      if (!lastUndoAction) return;
+      const action = lastUndoAction;
+      clearUndo();
+      action.undoFn();
+      logAction(`「${action.label}」を元に戻しました`);
+    }
+
+    function removeCardFromHandByRef(cardRef) {
+      const handContainer = document.getElementById('hand-cards');
+      if (!handContainer) return;
+      const wrappers = Array.from(handContainer.children);
+      for (let i = wrappers.length - 1; i >= 0; i--) {
+        const cEl = wrappers[i].querySelector('.dummy-card');
+        if (cEl && cEl.__cardRef === cardRef) {
+          wrappers[i].remove();
+          break;
+        }
+      }
+      broadcastPlayerState();
+    }
+
+    function restoreCardToBoard(snap) {
+      const newId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+      highestZIndex++;
+      const cardData = {
+        id: newId, card: snap.card, ownerIndex: snap.ownerIndex,
+        x: snap.x, y: snap.y, faceDown: snap.faceDown, tapped: snap.tapped,
+        slotOwnerIndex: snap.slotOwnerIndex, slotIndex: snap.slotIndex, zIndex: highestZIndex
+      };
+      broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
+      syncBoardCardLocal(cardData);
+    }
+
     function revealLifeCard(side) {
       const pool = lifeDecks[side];
       if (!pool || pool.length === 0) return alert(`${side === 'left' ? '左' : '右'}のライフデッキが空です`);
@@ -2308,6 +2827,8 @@
     function refreshDeck() {
       if (deckCards.length > 0) return alert('メインデッキにカードが残っているためリフレッシュできません');
       if (graveyards[myPlayerIndex].length === 0) return alert('墓地にカードがありません');
+      // 修正要件：取り消せない操作のため実行前に確認する
+      if (!confirm(`墓地の${graveyards[myPlayerIndex].length}枚をデッキに戻してシャッフルします。よろしいですか？`)) return;
       deckCards = deckCards.concat(graveyards[myPlayerIndex]);
       graveyards[myPlayerIndex] = [];
       shuffle(deckCards);
