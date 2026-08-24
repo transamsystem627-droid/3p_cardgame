@@ -109,7 +109,7 @@
     }
     .section-title { font-size: 1.6vh; color: #94a3b8; margin-bottom: 0.6vh; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
     #pack-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(6vw, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(7.2vw, 1fr));
       gap: 0.6vw; flex: 1; overflow-y: auto; padding: 0.4vh;
     }
 
@@ -229,9 +229,9 @@
     #mana-zone { border-color: #3b82f6; background: #091e3a; height: 8.5vh; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; align-items: center; padding-right: 9vw; }
     .mana-btn { padding: 0.4vh 0.6vw; font-size: 1.3vh; border-radius: 0.3vh; border: none; color: white; cursor: pointer; font-weight: bold; }
     
-    /* 修正要件：マナカードの横幅を1.3倍(1.5vw -> 1.95vw)に修正 */
+    /* 修正要件：マナカードを少しだけ横長に（縦長の形は維持） 1.95vw -> 2.3vw */
     .mana-card { 
-      width: 1.95vw; 
+      width: 2.3vw; 
       height: 6.5vh; 
       border: 2px solid #000; 
       border-radius: 0.4vh; 
@@ -262,9 +262,9 @@
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
-    /* カード枠サイズ設定（修正要件：共有プレイエリアのカードサイズをさらに少し縮小 3.7vw×9.3vh → 3.5vw×8.8vh） */
+    /* カード枠サイズ設定（修正要件：共有プレイエリアのカードサイズを横3.3vw×縦8.8vhに変更） */
     .dummy-card {
-      width: 3.3vw; height: 8.4vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
+      width: 3.3vw; height: 8.8vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
@@ -327,7 +327,9 @@
     /* サイドコンテナ */
     #side-container { position: absolute; right: 0.8vw; top: 1vh; width: 8.5vw; height: 96vh; display: flex; flex-direction: column; gap: 0.8vh; z-index: 200; pointer-events: none; }
     .tray-panel { background: rgba(15, 23, 42, 0.95); border-radius: 0.8vh; padding: 0.8vh; display: flex; flex-direction: column; pointer-events: auto; }
-    .tray-list { display: flex; flex-direction: column; gap: 0.6vh; overflow-y: auto; flex: 1; padding-right: 0.2vw; }
+    /* 修正要件：墓地カードが増えても下のターン終了ボタンが画面外へ押し出されないよう、
+       内容量に応じて伸縮し、はみ出す分だけ内部スクロールするようにする */
+    .tray-list { display: flex; flex-direction: column; gap: 0.6vh; overflow-y: auto; flex: 0 1 auto; min-height: 0; max-height: 100%; padding-right: 0.2vw; }
 
     /* 修正要件：デッキ内検索の手札・マナエリアを覆い隠すオーバーレイ */
     #deck-search-overlay {
@@ -367,11 +369,15 @@
 
     #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
-    /* 修正要件：カード固定枠のマスのサイズを横幅30vw、縦幅33vhに修正 */
+    /* 修正要件：カード固定枠のマスのサイズを横幅30vw、縦幅30vhに修正 */
     .lock-slot-container {
       position: absolute; width: 30vw; height: 30vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(3, 1fr); gap: 0.3vw; padding: 0.5vh; z-index: 2; pointer-events: auto;
+    }
+    /* 修正要件：ターンプレイヤーのカード固定枠を赤枠で囲う */
+    .lock-slot-container.turn-active {
+      border: 0.3vh solid #ef4444; box-shadow: 0 0 1.2vh rgba(239, 68, 68, 0.7);
     }
     .lock-slot {
       width: 100%; height: 100%; border: 0.1vh dashed #475569; border-radius: 0.5vh;
@@ -482,6 +488,31 @@
       display: none; margin-top: 1.5vh; padding-top: 1.5vh; border-top: 0.1vh solid #334155;
     }
     #resume-session-box p { font-size: 1.4vh; color: #94a3b8; margin-bottom: 0.8vh; }
+
+    /* 修正要件：ターン切り替え時の「あなたのターンです」表示 */
+    #turn-announcement {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: none; align-items: center; justify-content: center;
+      z-index: 9000; pointer-events: none;
+    }
+    .turn-announcement-text {
+      background: rgba(15, 23, 42, 0.92); border: 0.3vh solid #ef4444; border-radius: 1.2vh;
+      padding: 2vh 4vw; font-size: 3vh; font-weight: bold; color: #fecaca;
+      opacity: 0; transform: scale(0.85); transition: opacity 0.25s ease, transform 0.25s ease;
+      box-shadow: 0 0.6vh 2vh rgba(0,0,0,0.6);
+    }
+    #turn-announcement.show .turn-announcement-text { opacity: 1; transform: scale(1); }
+
+    /* 修正要件：ターン開始時に1枚引く/リフレッシュボタンを1.5秒ハイライト */
+    @keyframes turnHighlightPulse {
+      0%, 100% { box-shadow: 0 0 0.3vh 0.1vh #fbbf24; }
+      50% { box-shadow: 0 0 1.6vh 0.6vh #fbbf24; }
+    }
+    .btn-turn-highlight {
+      outline: 0.3vh solid #fbbf24 !important;
+      animation: turnHighlightPulse 0.5s ease-in-out infinite;
+      position: relative; z-index: 10;
+    }
     #modal-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 0.8vh; }
   </style>
 </head>
@@ -618,7 +649,7 @@
         <div style="display: flex; flex-direction: column; gap: 0.6vh; overflow-y: auto;">
           <div class="zone">
             <div class="zone-title" id="deck-title">メイン (<span id="deck-count">23</span>)</div>
-            <button class="game-btn" onclick="drawCard()" style="width:100%; margin-top:0.4vh;">1枚引く</button>
+            <button id="draw-card-btn" class="game-btn" onclick="drawCard()" style="width:100%; margin-top:0.4vh;">1枚引く</button>
             <button class="game-btn" onclick="revealTopDeckCard()" style="width:100%; margin-top:0.4vh; background:#eab308; color:#000; font-weight:bold;">1枚めくる</button>
             <button id="refresh-btn" class="game-btn" onclick="refreshDeck()">墓地を戻してリフレッシュ</button>
             <button class="game-btn" style="width:100%; margin-top:0.4vh;" onclick="toggleDeckSearch()">検索</button>
@@ -647,6 +678,7 @@
           <div class="left-action-zone" id="deck-return-zone"><b>デッキに戻す</b></div>
           <div class="left-action-zone" id="deck-bottom-zone"><b>デッキ一番下に戻す</b></div>
           <div class="left-action-zone" id="graveyard-zone"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
+          <button class="game-btn" id="end-turn-btn" onclick="endTurn()" disabled style="width:100%; margin-top:0.4vh; background:#ef4444; font-weight:bold; opacity:0.4;">ターン終了</button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.6vh;">
@@ -752,6 +784,7 @@
 
     <!-- 修正要件：接続状態バナー・Undoボタン・アクションログ -->
     <div id="conn-status-banner"></div>
+    <div id="turn-announcement"><div class="turn-announcement-text">あなたのターンです</div></div>
     <button id="undo-btn" onclick="undoLastAction()">元に戻す</button>
     <div id="action-log-toast"></div>
   </div>
@@ -1118,7 +1151,8 @@
         playerNames, cardFolder,
         playerStates, graveyards,
         boardCards: buildBoardCardsSnapshot(),
-        barStages: Object.assign({}, barStageState)
+        barStages: Object.assign({}, barStageState),
+        turnPlayerIndex: (typeof turnPlayerIndex !== 'undefined') ? turnPlayerIndex : null
       };
     }
 
@@ -1132,6 +1166,10 @@
       (pub.boardCards || []).forEach(data => syncBoardCardLocal(data));
       if (pub.barStages) {
         Object.keys(pub.barStages).forEach(pos => updateBarStageLocal(pos, pub.barStages[pos]));
+      }
+      // 修正要件：再接続/復帰時にもターン状態を復元（アナウンスは出さない）
+      if (pub.turnPlayerIndex !== null && pub.turnPlayerIndex !== undefined && typeof applyTurnPlayerSilent === 'function') {
+        applyTurnPlayerSilent(pub.turnPlayerIndex);
       }
       updateAllPlayerStatsDisplay();
       renderGraveyardList();
@@ -1493,11 +1531,22 @@
       checkAllDeckReady();
     }
 
+    let gameHasStarted = false;
     function checkAllDeckReady() {
+      if (gameHasStarted) return;
       if (playerDeckReady.every(r => r === true)) {
+        gameHasStarted = true;
         adjustPerspectiveBarLayout();
         renderScoreBar();
         startGame();
+        // 修正要件：対戦開始時に先行プレイヤーを決定し、棒の位置を自動調整する（ホストのみが決定し全員に配信）
+        if (isHost) {
+          const first = Math.floor(Math.random() * 3);
+          broadcast({ type: 'SET_TURN_PLAYER', payload: { index: first } });
+          setBarStage('top', 3);
+          setBarStage('left-p1', 2);
+          setBarStage('right-p1', 2);
+        }
       }
     }
 
@@ -1616,6 +1665,9 @@
           break;
         case 'CHAT':
           logAction(`${data.payload.name}: ${data.payload.message}`, true);
+          break;
+        case 'SET_TURN_PLAYER':
+          applyTurnPlayer(data.payload.index);
           break;
       }
     }
@@ -1823,18 +1875,23 @@
     let poolCards = [], mainDeck = [], selectedSpecialCard = null;
 
     /* カード要素作成 */
-    function createCardElement(card, onClick, sourceArea = null) {
+    function createCardElement(card, onClick, sourceArea = null, draggableOverride = true) {
       const cardEl = document.createElement('div');
       cardEl.className = 'card-item';
-      cardEl.draggable = true;
+      // 修正要件：自身の墓地一覧以外からは共有プレイエリアへドラッグできないようにする
+      cardEl.draggable = draggableOverride;
       cardEl.innerHTML = `<img class="card-img-thumb" src="${card.img}" alt="card">`;
       
       if (onClick) cardEl.onclick = onClick;
       
       // 修正要件：ドラッグして共有エリアに出せるようデータにsource情報を含める
-      cardEl.ondragstart = (e) => {
-        e.dataTransfer.setData('text/plain', JSON.stringify({ card: card, sourceArea: sourceArea }));
-      };
+      if (draggableOverride) {
+        cardEl.ondragstart = (e) => {
+          e.dataTransfer.setData('text/plain', JSON.stringify({ card: card, sourceArea: sourceArea }));
+        };
+      } else {
+        cardEl.style.cursor = 'default';
+      }
       
       cardEl.onmouseenter = (e) => showPreview(card, e);
       cardEl.onmousemove = (e) => movePreview(e);
@@ -1890,10 +1947,12 @@
           if (pKey === 'p1') {
             if (i === 0) {
               slot.classList.add('life-slot');
-              slot.innerHTML = `<span>左L</span><button class="btn-life-flip" onclick="revealLifeCard('left')">めくる</button>`;
+              // 修正要件：自身の左ライフの残り枚数を表示
+              slot.innerHTML = `<span>左L: <span id="own-left-life-count">-</span></span><button class="btn-life-flip" onclick="revealLifeCard('left')">めくる</button>`;
             } else if (i === 6) {
               slot.classList.add('life-slot');
-              slot.innerHTML = `<button class="btn-life-flip" onclick="revealLifeCard('right')">めくる</button><span>右L</span>`;
+              // 修正要件：自身の右ライフの残り枚数を表示
+              slot.innerHTML = `<button class="btn-life-flip" onclick="revealLifeCard('right')">めくる</button><span>右L: <span id="own-right-life-count">-</span></span>`;
             } else if (i > 0 && i < 6) {
               slot.classList.add('empty-slot');
             } else if (i >= 7 && i <= 13) {
@@ -1955,6 +2014,94 @@
       if (relative === 1) return { element: document.getElementById('p2-lock-zone'), rotClass: 'card-rot-p2' };
       return { element: document.getElementById('p3-lock-zone'), rotClass: 'card-rot-p3' };
     }
+
+    /* 修正要件：ターンの概念 */
+    let turnPlayerIndex = null;
+
+    function applyTurnPlayer(index) {
+      turnPlayerIndex = index;
+      updateTurnPlayerHighlight();
+      updateEndTurnButton();
+      if (index === myPlayerIndex) {
+        showTurnAnnouncement();
+        highlightDrawOrRefreshButton();
+      }
+    }
+
+    // 修正要件：セッション復帰/再接続時は「あなたのターンです」を出さずに状態だけ反映する
+    function applyTurnPlayerSilent(index) {
+      turnPlayerIndex = index;
+      updateTurnPlayerHighlight();
+      updateEndTurnButton();
+    }
+
+    // 修正要件：ターン開始時、デッキが残っていれば「1枚引く」、空なら「墓地を戻してリフレッシュ」を1.5秒ハイライト
+    function highlightDrawOrRefreshButton() {
+      const targetId = (deckCards.length === 0) ? 'refresh-btn' : 'draw-card-btn';
+      const btn = document.getElementById(targetId);
+      if (!btn) return;
+      btn.classList.add('btn-turn-highlight');
+      setTimeout(() => btn.classList.remove('btn-turn-highlight'), 1500);
+    }
+
+    function updateTurnPlayerHighlight() {
+      ['p1', 'p2', 'p3'].forEach(k => {
+        const zone = document.getElementById(`${k}-lock-zone`);
+        if (zone) zone.classList.remove('turn-active');
+      });
+      if (turnPlayerIndex === null || turnPlayerIndex === undefined) return;
+      const target = getDisplayTarget(turnPlayerIndex);
+      const zone = document.getElementById(`${target.slotKey}-lock-zone`);
+      if (zone) zone.classList.add('turn-active');
+    }
+
+    function updateEndTurnButton() {
+      const btn = document.getElementById('end-turn-btn');
+      if (!btn) return;
+      const isMyTurn = turnPlayerIndex === myPlayerIndex;
+      btn.disabled = !isMyTurn;
+      btn.style.opacity = isMyTurn ? '1' : '0.4';
+      btn.style.cursor = isMyTurn ? 'pointer' : 'default';
+    }
+
+    // 修正要件：新しいターンプレイヤーの固定枠に置かれたカードを全て縦向き(未タップ)に戻す
+    function untapOwnerLockedCards(ownerIdx) {
+      document.querySelectorAll('.placed-card').forEach(el => {
+        const slotOwnerAttr = el.getAttribute('data-slot-owner');
+        const isTapped = el.getAttribute('data-tapped') === 'true';
+        if (slotOwnerAttr !== '' && parseInt(slotOwnerAttr) === ownerIdx && isTapped) {
+          const cardData = {
+            id: el.id, card: el.cardDataObj, ownerIndex: parseInt(el.getAttribute('data-owner')),
+            x: parseFloat(el.style.left) || 0, y: parseFloat(el.style.top) || 0,
+            faceDown: el.getAttribute('data-facedown') === 'true', tapped: false,
+            slotOwnerIndex: ownerIdx, slotIndex: parseInt(el.getAttribute('data-slot-idx')),
+            zIndex: parseInt(el.style.zIndex) || 10
+          };
+          broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
+          updatePlacedCardDOM(el, cardData);
+        }
+      });
+    }
+
+    function endTurn() {
+      if (turnPlayerIndex !== myPlayerIndex) return;
+      const next = (turnPlayerIndex + 1) % 3;
+      broadcast({ type: 'SET_TURN_PLAYER', payload: { index: next } });
+      broadcastLog(`${myDisplayName()}がターンを終了しました`);
+      untapOwnerLockedCards(next);
+    }
+
+    function showTurnAnnouncement() {
+      const el = document.getElementById('turn-announcement');
+      if (!el) return;
+      el.style.display = 'flex';
+      requestAnimationFrame(() => el.classList.add('show'));
+      setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => { el.style.display = 'none'; }, 300);
+      }, 1000);
+    }
+
 
     function getOwnerIndexFromZoneId(zoneId) {
       let relative = 0;
@@ -2073,6 +2220,11 @@
     function updateLifeStatus() {
       playerStates[myPlayerIndex].leftLifeCount = lifeDecks.left.length;
       playerStates[myPlayerIndex].rightLifeCount = lifeDecks.right.length;
+      // 修正要件：手前側(自分)のカード固定枠にも自身のライフ残り枚数を表示
+      const leftEl = document.getElementById('own-left-life-count');
+      if (leftEl) leftEl.innerText = lifeDecks.left.length;
+      const rightEl = document.getElementById('own-right-life-count');
+      if (rightEl) rightEl.innerText = lifeDecks.right.length;
       broadcastPlayerState();
     }
 
@@ -2359,6 +2511,7 @@
       cardEl.onmousedown = (e) => {
         if (e.button !== 0) return;
         e.preventDefault();
+        hidePreview(); // 修正要件：ドラッグ開始時に拡大プレビューが残らないよう非表示にする
         clickStartTime = Date.now();
         isDragging = true;
         highestZIndex++;
@@ -2633,12 +2786,20 @@
 
     function removeBoardCardLocal(id) {
       const cardEl = document.getElementById(id);
-      if (cardEl) cardEl.remove();
+      if (cardEl) {
+        // 修正要件：カードが場から消える際、拡大プレビューが表示されたままにならないよう保険で閉じる
+        hidePreview();
+        cardEl.remove();
+      }
     }
 
     /* 修正要件：アクションログ／簡易チャット */
     function myDisplayName() {
       return playerNames[myPlayerIndex] || myName || `P${myPlayerIndex + 1}`;
+    }
+
+    function manaColorLabel(color) {
+      return { red: '赤', yellow: '黄', blue: '青', purple: '紫' }[color] || color;
     }
 
     function broadcastLog(msg) {
@@ -2793,7 +2954,8 @@
       document.getElementById('gy-count').innerText = graveyards[myPlayerIndex].length;
 
       list.forEach((card) => {
-        const cardEl = createCardElement(card, null, 'graveyard');
+        // 修正要件：自身の墓地一覧を表示している時だけドラッグ可能にする
+        const cardEl = createCardElement(card, null, 'graveyard', currentGyTab === myPlayerIndex);
         container.appendChild(cardEl);
       });
     }
@@ -2905,15 +3067,21 @@
             if (isDragging) {
               const zoneRect = zone.getBoundingClientRect();
               if (me.clientX < zoneRect.left || me.clientX > zoneRect.right || me.clientY < zoneRect.top || me.clientY > zoneRect.bottom) {
+                // 修正要件：マナをドラッグしてエリア外に破棄した際、誰が何色のマナを破棄したかをログ通知
                 localManaList = localManaList.filter(m => m.id !== mana.id);
                 renderManaZone();
                 broadcastPlayerState();
+                broadcastLog(`${myDisplayName()}が${manaColorLabel(mana.color)}マナを破棄しました`);
               } else {
                 renderManaZone();
               }
             } else {
+              // 修正要件：マナを横向き(使用)にした際、誰が何色のマナを使用したかをログ通知
               mana.tapped = !mana.tapped;
               renderManaZone();
+              if (mana.tapped) {
+                broadcastLog(`${myDisplayName()}が${manaColorLabel(mana.color)}マナを使用しました`);
+              }
             }
           };
 
