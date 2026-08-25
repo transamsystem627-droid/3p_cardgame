@@ -262,6 +262,17 @@
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
+    /* 修正要件：トリニティチャージ中の決定/暗転オーバーレイ */
+    #trinity-charge-confirm-btn { right: 5.6vw; }
+    #trinity-charge-dim {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.65); z-index: 3000; pointer-events: none;
+    }
+    #mana-zone.trinity-charge-active {
+      position: relative; z-index: 3100; box-shadow: 0 0 1.6vh 0.4vh #22c55e;
+      border-color: #22c55e;
+    }
+
     /* カード枠サイズ設定（修正要件：共有プレイエリアのカードサイズを横3.3vw×縦8.8vhに変更） */
     .dummy-card {
       width: 3.3vw; height: 8.8vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
@@ -309,8 +320,36 @@
     }
     #score-add-zone { border-color: #38bdf8; background: #0369a1; color: #e0f2fe; }
     #deck-return-zone { border-color: #ef4444; background: #2c1215; color: #fca5a5; }
+    #deck-return-top-zone { border-color: #fb923c; background: #431407; color: #fed7aa; }
     #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
     #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
+
+    /* 修正要件：ターン終了ボタンの代わりに、フェイズ進行4ボタンを縦書き風(1文字ずつ改行)横並びで空きスペースにぴったり収める */
+    #phase-button-row { display: flex; gap: 0.2vw; width: 100%; margin-top: 0.4vh; height: 9vh; }
+    .phase-btn {
+      flex: 1 1 0;
+      min-width: 0;
+      height: 100%;
+      overflow: hidden;
+      font-size: 0.85vh;
+      line-height: 1.15;
+      font-weight: bold;
+      border: none;
+      border-radius: 0.5vh;
+      background: #334155;
+      color: #e2e8f0;
+      cursor: pointer;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0.2vh 0;
+      transition: background 0.15s ease;
+    }
+    .phase-btn:hover { background: #475569; }
+    #end-turn-btn.phase-btn { background: #ef4444; color: #fff; opacity: 0.4; }
+    #end-turn-btn.phase-btn:not(:disabled):hover { background: #f87171; }
 
     /* 手札エリア */
     #bottom-hand-panel { height: 16vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.4vh 0.6vh; display: flex; flex-direction: column; position: relative; }
@@ -416,7 +455,7 @@
       border: 0.1vh solid #334155; border-radius: 1.2vh; display: flex; flex-direction: column; justify-content: center; padding: 0.6vh 0.8vw; z-index: 20;
     }
     .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-content: space-between; align-items: center; }
-    .bar-node { width: 0.7vw; height: 0.7vw; max-width: 1vh; max-height: 1vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
+    .bar-node { width: 0.7vw; height: 0.7vw; max-width: 1vh; max-height: 1vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; display: flex; align-items: center; justify-content: center; font-size: 0.5vw; color: #e2e8f0; font-weight: bold; line-height: 1; user-select: none; }
     
     .movable-bar-handle {
       position: absolute; background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -441,6 +480,22 @@
 
     #life-reveal-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(0.6vh); }
     #modal-card { width: 25vw; height: 65vh; background: #020617; border: 0.4vh solid #38bdf8; border-radius: 1.6vh; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 1vh; overflow: hidden; }
+
+    /* 修正要件：ターン開始時のドローUI */
+    #turn-draw-modal {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 9500; backdrop-filter: blur(0.6vh);
+    }
+    #turn-draw-title { color: #fbbf24; font-size: 1.8vh; font-weight: bold; margin-bottom: 2vh; }
+    #turn-draw-cards { display: flex; gap: 1.5vw; justify-content: center; }
+    .turn-draw-card {
+      width: 13vw; height: 32vh; background: #020617; border: 0.4vh solid #38bdf8; border-radius: 1.2vh;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .turn-draw-card:hover { transform: translateY(-0.6vh); border-color: #fbbf24; }
+    .turn-draw-card img { width: 100%; height: 100%; object-fit: contain; }
 
     /* 修正要件：接続状態バナー */
     #conn-status-banner {
@@ -651,7 +706,6 @@
             <div class="zone-title" id="deck-title">メイン (<span id="deck-count">23</span>)</div>
             <button id="draw-card-btn" class="game-btn" onclick="drawCard()" style="width:100%; margin-top:0.4vh;">1枚引く</button>
             <button class="game-btn" onclick="revealTopDeckCard()" style="width:100%; margin-top:0.4vh; background:#eab308; color:#000; font-weight:bold;">1枚めくる</button>
-            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()">墓地を戻してリフレッシュ</button>
             <button class="game-btn" style="width:100%; margin-top:0.4vh;" onclick="toggleDeckSearch()">検索</button>
           </div>
           
@@ -671,14 +725,26 @@
                 <span id="counter-num" style="font-size:1.6vh; font-weight:bold; color:#fff;">0</span>
                 <button class="counter-btn" onclick="updateTrinity(1)">＋</button>
               </div>
+              <!-- 修正要件：トリニティドロー/トリニティチャージボタンを追加 -->
+              <div style="display:flex; gap:0.3vw; margin-top:0.5vh;">
+                <button class="game-btn" id="trinity-draw-btn" onclick="requestTrinityDraw()" style="flex:1; font-size:0.95vh; padding:0.5vh 0.2vw; background:#7c3aed;">トリニティ<br>ドロー</button>
+                <button class="game-btn" id="trinity-charge-btn" onclick="startTrinityCharge()" style="flex:1; font-size:0.95vh; padding:0.5vh 0.2vw; background:#059669;">トリニティ<br>チャージ</button>
+              </div>
             </div>
           </div>
 
           <div class="left-action-zone" id="score-add-zone"><b>★獲得ライフに追加</b></div>
           <div class="left-action-zone" id="deck-return-zone"><b>デッキに戻す</b></div>
+          <div class="left-action-zone" id="deck-return-top-zone"><b>デッキの上に戻す</b></div>
           <div class="left-action-zone" id="deck-bottom-zone"><b>デッキ一番下に戻す</b></div>
           <div class="left-action-zone" id="graveyard-zone"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
-          <button class="game-btn" id="end-turn-btn" onclick="endTurn()" disabled style="width:100%; margin-top:0.4vh; background:#ef4444; font-weight:bold; opacity:0.4;">ターン終了</button>
+          <!-- 修正要件：ターン終了ボタンをフェイズ進行ボタン4つ(縦書き横並び)に置き換え -->
+          <div id="phase-button-row">
+            <button class="phase-btn" onclick="setPhase('main1')">メ<br>イ<br>ン<br>フ<br>ェ<br>イ<br>ズ<br>1</button>
+            <button class="phase-btn" onclick="setPhase('battle')">バ<br>ト<br>ル<br>フ<br>ェ<br>イ<br>ズ</button>
+            <button class="phase-btn" onclick="setPhase('main2')">メ<br>イ<br>ン<br>フ<br>ェ<br>イ<br>ズ<br>2</button>
+            <button class="phase-btn" id="end-turn-btn" onclick="endTurn()" disabled>タ<br>ー<br>ン<br>終<br>了</button>
+          </div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.6vh;">
@@ -711,24 +777,24 @@
               </div>
             </div>
 
-            <!-- 左側の棒 -->
+            <!-- 左側の棒（修正要件：点に番号付与。上から+2,+1,-1,-2＝下から-2,-1,+1,+2） -->
             <div id="track-left-p1" class="bar-track-container bar-vertical">
               <div class="bar-track-line">
-                <div class="bar-node" onclick="setBarStage('left-p1', 1)"></div>
-                <div class="bar-node" onclick="setBarStage('left-p1', 2)"></div>
-                <div class="bar-node" onclick="setBarStage('left-p1', 3)"></div>
-                <div class="bar-node" onclick="setBarStage('left-p1', 4)"></div>
+                <div class="bar-node" onclick="setBarStage('left-p1', 1)">+2</div>
+                <div class="bar-node" onclick="setBarStage('left-p1', 2)">+1</div>
+                <div class="bar-node" onclick="setBarStage('left-p1', 3)">-1</div>
+                <div class="bar-node" onclick="setBarStage('left-p1', 4)">-2</div>
                 <div id="handle-left-p1" class="movable-bar-handle"></div>
               </div>
             </div>
 
-            <!-- 右側の棒 -->
+            <!-- 右側の棒（修正要件：点に番号付与。上から+2,+1,-1,-2＝下から-2,-1,+1,+2） -->
             <div id="track-right-p1" class="bar-track-container bar-vertical">
               <div class="bar-track-line">
-                <div class="bar-node" onclick="setBarStage('right-p1', 1)"></div>
-                <div class="bar-node" onclick="setBarStage('right-p1', 2)"></div>
-                <div class="bar-node" onclick="setBarStage('right-p1', 3)"></div>
-                <div class="bar-node" onclick="setBarStage('right-p1', 4)"></div>
+                <div class="bar-node" onclick="setBarStage('right-p1', 1)">+2</div>
+                <div class="bar-node" onclick="setBarStage('right-p1', 2)">+1</div>
+                <div class="bar-node" onclick="setBarStage('right-p1', 3)">-1</div>
+                <div class="bar-node" onclick="setBarStage('right-p1', 4)">-2</div>
                 <div id="handle-right-p1" class="movable-bar-handle"></div>
               </div>
             </div>
@@ -736,10 +802,16 @@
           
           <div class="zone" id="mana-zone">
             <div class="zone-title" style="margin-right:1vw;">自分のマナゾーン<br><small>(枠外ドラッグで削除)</small></div>
-            <button class="btn-untap-all" onclick="untapAllMana()">すべてのマナを<br>起こす</button>
+            <button class="btn-untap-all" id="untap-all-btn" onclick="untapAllMana()">すべてのマナを<br>起こす</button>
+            <!-- 修正要件：トリニティチャージ中に表示する中止/決定ボタン -->
+            <button class="btn-untap-all" id="trinity-charge-cancel-btn" onclick="cancelTrinityCharge()" style="display:none; background:#7f1d1d; border-color:#ef4444;">中止</button>
+            <button class="btn-untap-all" id="trinity-charge-confirm-btn" onclick="confirmTrinityCharge()" style="display:none; background:#166534; border-color:#22c55e;">決定</button>
           </div>
         </div>
       </div>
+
+      <!-- 修正要件：トリニティチャージ中、マナゾーン以外を暗転させるオーバーレイ -->
+      <div id="trinity-charge-dim" style="display:none;"></div>
 
       <div id="bottom-hand-panel">
         <div class="zone-title" style="margin:0; text-align:left; color:#10b981; font-weight:bold;">手札（ドラッグでエリアへ移動）</div>
@@ -777,9 +849,23 @@
     </div>
 
     <div id="life-reveal-modal">
-      <div id="modal-card" onclick="placeLifeCardToField()">
-        <img id="modal-card-img" src="" alt="">
+      <div style="display:flex; align-items:center; gap:1.5vw;">
+        <div id="modal-card" onclick="placeLifeCardToField()">
+          <img id="modal-card-img" src="" alt="">
+        </div>
+        <!-- 修正要件：1枚めくるボタン由来のカードのみ、フィールドに出す/一番上に戻す/一番下に戻すボタンを表示 -->
+        <div id="modal-card-actions" style="display:none; flex-direction:column; gap:1vh;">
+          <button class="game-btn" style="width:9vw;" onclick="placeLifeCardToField()">フィールドに出す</button>
+          <button class="game-btn" style="width:9vw;" onclick="returnRevealedCardToDeckTop()">一番上に戻す</button>
+          <button class="game-btn" style="width:9vw;" onclick="returnRevealedCardToDeckBottom()">一番下に戻す</button>
+        </div>
       </div>
+    </div>
+
+    <!-- 修正要件：ターン開始時のドローUI（1枚 or 墓地シャッフル後3枚） -->
+    <div id="turn-draw-modal">
+      <div id="turn-draw-title">ターンドロー（カードをクリックして手札へ）</div>
+      <div id="turn-draw-cards"></div>
     </div>
 
     <!-- 修正要件：接続状態バナー・Undoボタン・アクションログ -->
@@ -800,9 +886,13 @@
     const SESSION_KEY = 'trinity_ttp_session_v1';
     const MAX_RECONNECT_ATTEMPTS = 8;
 
+    // 修正要件：バグ調査の結果、localStorageは同一ブラウザの全タブで共有されるため、
+    // 同じブラウザの複数タブで別プレイヤーとして接続すると互いのセッション情報を上書きしてしまい、
+    // 「プレイヤー3がプレイヤー2として復帰する」といった取り違えが発生していた。
+    // タブごとに独立しているsessionStorageに切り替えることでこの衝突を防ぐ。
     function loadSession() {
       try {
-        const raw = localStorage.getItem(SESSION_KEY);
+        const raw = sessionStorage.getItem(SESSION_KEY);
         if (!raw) return null;
         const obj = JSON.parse(raw);
         if (!obj || !obj.savedAt) return null;
@@ -811,7 +901,7 @@
       } catch (e) { return null; }
     }
     function clearSession() {
-      try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+      try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
     }
 
     let savedSession = loadSession();
@@ -992,6 +1082,7 @@
       renderScoreBar();
       updateDeckStatus();
       updateLifeStatus();
+      updatePhaseDisplay();
     }
 
     /* 修正要件：ホスト側 - 新規接続の受け付け（枠が空いていれば再接続として認識） */
@@ -1033,7 +1124,7 @@
 
     function getSavedResumeIndex() {
       try {
-        const raw = localStorage.getItem(SESSION_KEY);
+        const raw = sessionStorage.getItem(SESSION_KEY);
         if (!raw) return null;
         const s = JSON.parse(raw);
         if (s && !s.isHost && s.hostId === (hostConn && hostConn.peer) && typeof s.myPlayerIndex === 'number') {
@@ -1188,7 +1279,7 @@
           private: (currentPhase === 'battle') ? buildPrivateSnapshot() : null,
           public: (isHost && currentPhase === 'battle') ? buildPublicSnapshot() : null
         };
-        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
       } catch (e) { /* 保存できなくても致命的ではないため無視 */ }
     }
 
@@ -1543,9 +1634,9 @@
         if (isHost) {
           const first = Math.floor(Math.random() * 3);
           broadcast({ type: 'SET_TURN_PLAYER', payload: { index: first } });
-          setBarStage('top', 3);
-          setBarStage('left-p1', 2);
-          setBarStage('right-p1', 2);
+          setBarStage('top', 3);       // 左から3段階目
+          setBarStage('left-p1', 3);   // 下から-1の位置
+          setBarStage('right-p1', 3);  // 下から-1の位置
         }
       }
     }
@@ -1930,6 +2021,7 @@
 
     /* 対戦ゲームモード */
     let deckCards = [], lifeDecks = { left: [], right: [] }, currentRevealedLifeCard = null, targetLifeSlotIndex = null;
+    let revealedCardSource = null; // 修正要件：'deck'(1枚めくる由来)か'life'(ライフ由来)かを区別
     let graveyards = [[], [], []], currentGyTab = 0, highestZIndex = 1000;
     let localManaList = [];
     const COLOR_ORDER = { 'red': 1, 'yellow': 2, 'blue': 3, 'purple': 4 };
@@ -1953,6 +2045,10 @@
               slot.classList.add('life-slot');
               // 修正要件：自身の右ライフの残り枚数を表示
               slot.innerHTML = `<button class="btn-life-flip" onclick="revealLifeCard('right')">めくる</button><span>右L: <span id="own-right-life-count">-</span></span>`;
+            } else if (i === 3) {
+              // 修正要件：手前の固定枠の左右ライフの間に現在のフェイズを表示
+              slot.classList.add('empty-slot');
+              slot.innerHTML = `<span id="own-phase-display" style="font-size:1vh; color:#fbbf24; font-weight:bold;">-</span>`;
             } else if (i > 0 && i < 6) {
               slot.classList.add('empty-slot');
             } else if (i >= 7 && i <= 13) {
@@ -2023,9 +2119,27 @@
       updateTurnPlayerHighlight();
       updateEndTurnButton();
       if (index === myPlayerIndex) {
+        // 修正要件：自分のターンが始まったらフェイズをメインフェイズ1にリセット
+        myPhaseState = 'main1';
+        updatePhaseDisplay();
         showTurnAnnouncement();
-        highlightDrawOrRefreshButton();
+        showTurnDrawModal();
       }
+    }
+
+    // 修正要件：フェイズ進行ボタン（メインフェイズ1/バトルフェイズ/メインフェイズ2）
+    let myPhaseState = 'main1';
+    const PHASE_LABELS = { main1: 'メインフェイズ1', battle: 'バトルフェイズ', main2: 'メインフェイズ2' };
+
+    function setPhase(phase) {
+      myPhaseState = phase;
+      updatePhaseDisplay();
+      broadcastLog(`${myDisplayName()}が${PHASE_LABELS[phase]}に移行しました`);
+    }
+
+    function updatePhaseDisplay() {
+      const el = document.getElementById('own-phase-display');
+      if (el) el.innerText = PHASE_LABELS[myPhaseState] || '-';
     }
 
     // 修正要件：セッション復帰/再接続時は「あなたのターンです」を出さずに状態だけ反映する
@@ -2035,13 +2149,63 @@
       updateEndTurnButton();
     }
 
-    // 修正要件：ターン開始時、デッキが残っていれば「1枚引く」、空なら「墓地を戻してリフレッシュ」を1.5秒ハイライト
-    function highlightDrawOrRefreshButton() {
-      const targetId = (deckCards.length === 0) ? 'refresh-btn' : 'draw-card-btn';
-      const btn = document.getElementById(targetId);
-      if (!btn) return;
-      btn.classList.add('btn-turn-highlight');
-      setTimeout(() => btn.classList.remove('btn-turn-highlight'), 1500);
+    // 修正要件：ターン開始時、デッキの一番上のカードを画面中央に大きく表示。
+    // デッキが0枚の場合は墓地をすべてデッキに戻してシャッフルし、上から3枚を並べて表示する。
+    function showTurnDrawModal() {
+      const modal = document.getElementById('turn-draw-modal');
+      const title = document.getElementById('turn-draw-title');
+      const container = document.getElementById('turn-draw-cards');
+      if (!modal || !container) return;
+      container.innerHTML = '';
+
+      if (deckCards.length === 0) {
+        if (graveyards[myPlayerIndex].length === 0) return; // デッキも墓地も無ければ何もしない
+
+        deckCards = deckCards.concat(graveyards[myPlayerIndex]);
+        graveyards[myPlayerIndex] = [];
+        shuffle(deckCards);
+        broadcastGraveyard(myPlayerIndex);
+        updateDeckStatus();
+        broadcastLog(`${myDisplayName()}の墓地がデッキに戻ってシャッフルされました`);
+
+        title.innerText = 'ターンドロー（3枚の中から1枚選んでください）';
+        const drawn = deckCards.slice(-3).reverse();
+        drawn.forEach(card => {
+          const el = document.createElement('div');
+          el.className = 'turn-draw-card';
+          el.innerHTML = `<img src="${card.img}" alt="card">`;
+          el.onclick = () => {
+            drawn.forEach(c => {
+              const idx = deckCards.indexOf(c);
+              if (idx !== -1) deckCards.splice(idx, 1);
+              addCardToHand(c);
+            });
+            updateDeckStatus();
+            hideTurnDrawModal();
+          };
+          container.appendChild(el);
+        });
+      } else {
+        title.innerText = 'ターンドロー（カードをクリックして手札へ）';
+        const topCard = deckCards[deckCards.length - 1];
+        const el = document.createElement('div');
+        el.className = 'turn-draw-card';
+        el.innerHTML = `<img src="${topCard.img}" alt="card">`;
+        el.onclick = () => {
+          deckCards.pop();
+          addCardToHand(topCard);
+          updateDeckStatus();
+          hideTurnDrawModal();
+        };
+        container.appendChild(el);
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function hideTurnDrawModal() {
+      const modal = document.getElementById('turn-draw-modal');
+      if (modal) modal.style.display = 'none';
     }
 
     function updateTurnPlayerHighlight() {
@@ -2202,6 +2366,7 @@
 
       updateDeckStatus();
       updateLifeStatus();
+      updatePhaseDisplay();
       broadcastPlayerState();
     }
 
@@ -2310,10 +2475,39 @@
       if (deckCards.length === 0) return alert('デッキが空です');
       currentRevealedLifeCard = deckCards.pop();
       targetLifeSlotIndex = null;
+      revealedCardSource = 'deck';
       updateDeckStatus();
+      // 修正要件：1枚めくるボタンを押したことをログで通知
+      broadcastLog(`${myDisplayName()}がデッキの一番上のカードをめくりました`);
 
       document.getElementById('modal-card-img').src = currentRevealedLifeCard.img;
+      document.getElementById('modal-card-actions').style.display = 'flex';
       document.getElementById('life-reveal-modal').style.display = 'flex';
+    }
+
+    // 修正要件：めくったカードをデッキの一番上/一番下に戻す
+    function returnRevealedCardToDeckTop() {
+      if (!currentRevealedLifeCard || revealedCardSource !== 'deck') return;
+      deckCards.push(currentRevealedLifeCard);
+      updateDeckStatus();
+      broadcastLog(`${myDisplayName()}がめくったカードをデッキの一番上に戻しました`);
+      currentRevealedLifeCard = null;
+      targetLifeSlotIndex = null;
+      revealedCardSource = null;
+      document.getElementById('modal-card-actions').style.display = 'none';
+      document.getElementById('life-reveal-modal').style.display = 'none';
+    }
+
+    function returnRevealedCardToDeckBottom() {
+      if (!currentRevealedLifeCard || revealedCardSource !== 'deck') return;
+      deckCards.unshift(currentRevealedLifeCard);
+      updateDeckStatus();
+      broadcastLog(`${myDisplayName()}がめくったカードをデッキの一番下に戻しました`);
+      currentRevealedLifeCard = null;
+      targetLifeSlotIndex = null;
+      revealedCardSource = null;
+      document.getElementById('modal-card-actions').style.display = 'none';
+      document.getElementById('life-reveal-modal').style.display = 'none';
     }
 
     function addCardToHand(card) {
@@ -2350,46 +2544,132 @@
       broadcastPlayerState();
     }
 
+    /* 修正要件：手札からのドラッグは、実際にドロップするまで他プレイヤーに一切共有しない。
+       ドラッグ中はローカル専用の見た目(ゴースト)だけを追従させ、ドロップ結果が確定した瞬間に
+       初めて共有プレイエリアのカードとして同期する。 */
     function startHandCardDrag(e, card, wrapperEl, forceFaceDown = false) {
       e.preventDefault();
       hidePreview();
       const table = document.getElementById('zone-table');
-      const tableRect = table.getBoundingClientRect();
-      
-      const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-      const startX = e.clientX - tableRect.left - (tableRect.width * 0.020);
-      const startY = e.clientY - tableRect.top - (tableRect.height * 0.050);
-
       const faceDownMode = forceFaceDown || (e.button === 2);
+      const startX = e.clientX, startY = e.clientY;
 
-      if (wrapperEl) wrapperEl.remove();
-      broadcastPlayerState();
+      const ghost = document.createElement('div');
+      ghost.className = 'dummy-card';
+      ghost.style.position = 'fixed';
+      ghost.style.pointerEvents = 'none';
+      ghost.style.zIndex = '9999';
+      ghost.style.opacity = '0.85';
+      ghost.innerHTML = faceDownMode
+        ? `<div style="width:100%;height:100%;background:#334155;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:1vh;">裏面</div>`
+        : `<img src="${card.img}" alt="card">`;
+      document.body.appendChild(ghost);
 
-      const cardData = {
-        id: newCardId,
-        card: card,
-        ownerIndex: myPlayerIndex,
-        x: startX,
-        y: startY,
-        faceDown: faceDownMode,
-        tapped: false,
-        slotOwnerIndex: null,
-        slotIndex: null
+      const gw = ghost.getBoundingClientRect().width;
+      const gh = ghost.getBoundingClientRect().height;
+      const positionGhost = (x, y) => {
+        ghost.style.left = `${x - gw / 2}px`;
+        ghost.style.top = `${y - gh / 2}px`;
+      };
+      positionGhost(startX, startY);
+
+      let moved = false;
+
+      const onMouseMove = (me) => {
+        if (Math.hypot(me.clientX - startX, me.clientY - startY) > 4) moved = true;
+        positionGhost(me.clientX, me.clientY);
       };
 
-      broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
-      syncBoardCardLocal(cardData);
+      const onMouseUp = (me) => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        ghost.remove();
 
-      const placedEl = document.getElementById(newCardId);
-      if (placedEl) {
-        // 修正要件：手札から出した直後のカードは、共有プレイエリア外にドロップされた場合に手札へ戻せるよう目印を付ける
-        placedEl.dataset.fromHand = 'true';
-        placedEl.dispatchEvent(new MouseEvent('mousedown', {
-          clientX: e.clientX,
-          clientY: e.clientY,
-          bubbles: true
-        }));
-      }
+        if (!moved) return; // 単なるクリックは何もせず手札に留まる
+
+        const inRect = (r) => r && me.clientX >= r.left && me.clientX <= r.right && me.clientY >= r.top && me.clientY <= r.bottom;
+
+        const handPanel = document.getElementById('bottom-hand-panel').getBoundingClientRect();
+        if (inRect(handPanel)) return; // 手札内に戻しただけ
+
+        const scoreZone = document.getElementById('score-add-zone').getBoundingClientRect();
+        const returnTopZoneEl = document.getElementById('deck-return-top-zone');
+        const returnTopZone = returnTopZoneEl ? returnTopZoneEl.getBoundingClientRect() : null;
+        const returnZone = document.getElementById('deck-return-zone').getBoundingClientRect();
+        const returnBottomZone = document.getElementById('deck-bottom-zone').getBoundingClientRect();
+        const gyZone = document.getElementById('graveyard-zone').getBoundingClientRect();
+
+        if (inRect(scoreZone)) {
+          if (wrapperEl) wrapperEl.remove();
+          playerStates[myPlayerIndex].lifeScore += 1;
+          broadcastPlayerState();
+          broadcastLog(`${myDisplayName()}が獲得ライフに追加しました`);
+          return;
+        }
+        if (inRect(returnTopZone)) {
+          if (wrapperEl) wrapperEl.remove();
+          deckCards.push(card);
+          updateDeckStatus();
+          broadcastLog(`${myDisplayName()}がカードをデッキの一番上に戻しました`);
+          return;
+        }
+        if (inRect(returnZone)) {
+          if (wrapperEl) wrapperEl.remove();
+          deckCards.push(card);
+          shuffle(deckCards);
+          updateDeckStatus();
+          broadcastLog(`${myDisplayName()}がカードをデッキに戻しました`);
+          return;
+        }
+        if (inRect(returnBottomZone)) {
+          if (wrapperEl) wrapperEl.remove();
+          deckCards.unshift(card);
+          updateDeckStatus();
+          broadcastLog(`${myDisplayName()}がカードをデッキの一番下に戻しました`);
+          return;
+        }
+        if (inRect(gyZone)) {
+          if (wrapperEl) wrapperEl.remove();
+          graveyards[myPlayerIndex].push(card);
+          broadcastGraveyard(myPlayerIndex);
+          broadcastPlayerState();
+          broadcastLog(`${myDisplayName()}がカードを墓地へ送りました`);
+          return;
+        }
+
+        const tableRect = table.getBoundingClientRect();
+        const insideTable = me.clientX >= tableRect.left && me.clientX <= tableRect.right && me.clientY >= tableRect.top && me.clientY <= tableRect.bottom;
+        if (!insideTable) return; // 無効な場所 → 手札に留まる
+
+        // 修正要件：ここで初めて共有プレイエリアのカードとして全員に共有する
+        if (wrapperEl) wrapperEl.remove();
+        broadcastPlayerState();
+
+        const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        let posX = me.clientX - tableRect.left - (tableRect.width * 0.020);
+        let posY = me.clientY - tableRect.top - (tableRect.height * 0.050);
+        let slotOwnerIndex = null, slotIndex = null;
+
+        const closest = findClosestSlot(me.clientX, me.clientY);
+        if (closest) {
+          slotOwnerIndex = closest.slotOwnerIndex;
+          slotIndex = closest.slotIndex;
+          const slotPos = getSlotPosition(slotOwnerIndex, slotIndex, newCardId);
+          if (slotPos) { posX = slotPos.x; posY = slotPos.y; }
+        }
+
+        highestZIndex++;
+        const cardData = {
+          id: newCardId, card: card, ownerIndex: myPlayerIndex,
+          x: posX, y: posY, faceDown: faceDownMode, tapped: false,
+          slotOwnerIndex, slotIndex, zIndex: highestZIndex
+        };
+        broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
+        syncBoardCardLocal(cardData);
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
     }
 
     /* 修正要件：デッキ検索・墓地から共有プレイエリアへドラッグ＆ドロップした際の受け入れ処理 */
@@ -2614,6 +2894,8 @@
 
           const scoreZone = document.getElementById('score-add-zone').getBoundingClientRect();
           const returnZone = document.getElementById('deck-return-zone').getBoundingClientRect();
+          const returnTopZoneEl = document.getElementById('deck-return-top-zone');
+          const returnTopZone = returnTopZoneEl ? returnTopZoneEl.getBoundingClientRect() : null;
           const returnBottomZone = document.getElementById('deck-bottom-zone').getBoundingClientRect();
           const gyZone = document.getElementById('graveyard-zone').getBoundingClientRect();
 
@@ -2639,6 +2921,21 @@
             updateDeckStatus();
             broadcastLog(`${myDisplayName()}がカードをデッキに戻しました`);
             recordUndo('デッキに戻す', () => {
+              const idx = deckCards.indexOf(snap.card);
+              if (idx !== -1) deckCards.splice(idx, 1);
+              updateDeckStatus();
+              restoreCardToBoard(snap);
+            });
+            return;
+          }
+
+          if (returnTopZone && me.clientX >= returnTopZone.left && me.clientX <= returnTopZone.right && me.clientY >= returnTopZone.top && me.clientY <= returnTopZone.bottom) {
+            const snap = captureSnap();
+            deckCards.push(cardEl.cardDataObj);
+            removeBoardCard(cardEl.id);
+            updateDeckStatus();
+            broadcastLog(`${myDisplayName()}がカードをデッキの一番上に戻しました`);
+            recordUndo('デッキの一番上に戻す', () => {
               const idx = deckCards.indexOf(snap.card);
               if (idx !== -1) deckCards.splice(idx, 1);
               updateDeckStatus();
@@ -2892,15 +3189,18 @@
       if (!pool || pool.length === 0) return alert(`${side === 'left' ? '左' : '右'}のライフデッキが空です`);
       currentRevealedLifeCard = pool.pop();
       targetLifeSlotIndex = (side === 'left') ? 0 : 6;
+      revealedCardSource = 'life';
       updateLifeStatus();
 
       document.getElementById('modal-card-img').src = currentRevealedLifeCard.img;
+      document.getElementById('modal-card-actions').style.display = 'none';
       document.getElementById('life-reveal-modal').style.display = 'flex';
     }
 
     function placeLifeCardToField() {
       if (!currentRevealedLifeCard) return;
       document.getElementById('life-reveal-modal').style.display = 'none';
+      document.getElementById('modal-card-actions').style.display = 'none';
 
       const table = document.getElementById('zone-table');
       const tableRect = table.getBoundingClientRect();
@@ -3025,7 +3325,8 @@
         manaEl.className = `mana-card mana-${mana.color}` + (mana.tapped ? ' tapped' : '');
         manaEl.innerText = mana.color.charAt(0).toUpperCase();
 
-        const overlapOffset = idx * 1.2;
+        // 修正要件：マナ同士の重なりを少しだけ小さく(1.2vw -> 1.5vw間隔)
+        const overlapOffset = idx * 1.5;
         manaEl.style.left = `calc(10vw + ${overlapOffset}vw)`;
 
         let isDragging = false;
@@ -3082,6 +3383,15 @@
               if (mana.tapped) {
                 broadcastLog(`${myDisplayName()}が${manaColorLabel(mana.color)}マナを使用しました`);
               }
+              // 修正要件：トリニティチャージ中は、新たに横にしたマナの枚数を追跡する
+              if (trinityChargeActive) {
+                if (mana.tapped) {
+                  trinityChargeNewlyTapped.add(mana.id);
+                } else {
+                  trinityChargeNewlyTapped.delete(mana.id);
+                }
+                updateTrinityChargeConfirmVisibility();
+              }
             }
           };
 
@@ -3104,6 +3414,72 @@
       playerStates[myPlayerIndex].trinity = Math.min(10, Math.max(0, current + val));
       document.getElementById('counter-num').innerText = playerStates[myPlayerIndex].trinity;
       broadcastPlayerState();
+    }
+
+    /* 修正要件：トリニティドロー（トリニティ3消費でデッキ一番上をドロー。誤操作防止のため確認あり） */
+    function requestTrinityDraw() {
+      const trinity = playerStates[myPlayerIndex].trinity || 0;
+      if (trinity < 3) return alert('トリニティが3つ未満のため実行できません');
+      if (deckCards.length === 0) return alert('デッキが空です');
+      if (!confirm('トリニティを3つ消費して、デッキの一番上のカードをドローします。よろしいですか？')) return;
+      playerStates[myPlayerIndex].trinity = trinity - 3;
+      document.getElementById('counter-num').innerText = playerStates[myPlayerIndex].trinity;
+      const card = deckCards.pop();
+      addCardToHand(card);
+      updateDeckStatus();
+      broadcastPlayerState();
+      broadcastLog(`${myDisplayName()}がトリニティドローを行いました`);
+    }
+
+    /* 修正要件：トリニティチャージ（マナゾーン以外を暗転させ、新たに3枚横向きにすると決定ボタンが出現） */
+    let trinityChargeActive = false;
+    let trinityChargeNewlyTapped = new Set();
+
+    function startTrinityCharge() {
+      if (trinityChargeActive) return;
+      trinityChargeActive = true;
+      trinityChargeNewlyTapped = new Set();
+      document.getElementById('trinity-charge-dim').style.display = 'block';
+      document.getElementById('mana-zone').classList.add('trinity-charge-active');
+      document.getElementById('untap-all-btn').style.display = 'none';
+      document.getElementById('trinity-charge-cancel-btn').style.display = 'block';
+      document.getElementById('trinity-charge-confirm-btn').style.display = 'none';
+    }
+
+    function updateTrinityChargeConfirmVisibility() {
+      const btn = document.getElementById('trinity-charge-confirm-btn');
+      if (!btn) return;
+      btn.style.display = (trinityChargeNewlyTapped.size === 3) ? 'block' : 'none';
+    }
+
+    function cancelTrinityCharge() {
+      if (!trinityChargeActive) return;
+      // 新しく横にしたマナを縦向きに戻す
+      localManaList.forEach(m => {
+        if (trinityChargeNewlyTapped.has(m.id)) m.tapped = false;
+      });
+      renderManaZone();
+      endTrinityChargeUI();
+    }
+
+    function confirmTrinityCharge() {
+      if (!trinityChargeActive || trinityChargeNewlyTapped.size !== 3) return;
+      const current = playerStates[myPlayerIndex].trinity || 0;
+      playerStates[myPlayerIndex].trinity = Math.min(10, current + 1);
+      document.getElementById('counter-num').innerText = playerStates[myPlayerIndex].trinity;
+      broadcastPlayerState();
+      broadcastLog(`${myDisplayName()}がトリニティチャージを行いました`);
+      endTrinityChargeUI();
+    }
+
+    function endTrinityChargeUI() {
+      trinityChargeActive = false;
+      trinityChargeNewlyTapped = new Set();
+      document.getElementById('trinity-charge-dim').style.display = 'none';
+      document.getElementById('mana-zone').classList.remove('trinity-charge-active');
+      document.getElementById('untap-all-btn').style.display = 'block';
+      document.getElementById('trinity-charge-cancel-btn').style.display = 'none';
+      document.getElementById('trinity-charge-confirm-btn').style.display = 'none';
     }
   </script>
 </body>
