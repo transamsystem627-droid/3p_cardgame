@@ -203,9 +203,9 @@
     }
     .score-group { display: flex; align-items: center; gap: 0.6vw; font-size: 1.5vh; }
     .score-p-title { font-weight: bold; font-size: 1.6vh; }
-    .score-p1-title { color: #818cf8; }
-    .score-p2-title { color: #38bdf8; }
-    .score-p3-title { color: #f43f5e; }
+    .score-p1-title { color: #ef4444; }
+    .score-p2-title { color: #22d3ee; }
+    .score-p3-title { color: #22c55e; }
     .score-box { display: flex; align-items: center; gap: 0.3vw; background: #1e293b; padding: 0.3vh 0.6vw; border-radius: 0.4vh; border: 0.1vh solid #475569; }
     .score-label { color: #94a3b8; font-size: 1.3vh; }
     .score-val { font-size: 1.6vh; font-weight: bold; color: #38bdf8; }
@@ -223,8 +223,6 @@
     button.game-btn { padding: 0.8vh 0.5vw; background: #4f46e5; color: white; border: none; border-radius: 0.4vh; cursor: pointer; font-size: 1.3vh; font-weight: bold; }
     button.game-btn:hover { background: #6366f1; }
     button.game-btn:disabled { background: #334155 !important; color: #64748b !important; cursor: not-allowed; }
-    #refresh-btn { background: #10b981; margin-top: 0.4vh; width: 100%; display: block; }
-    #refresh-btn:hover:not(:disabled) { background: #059669; }
 
     #mana-zone { border-color: #3b82f6; background: #091e3a; height: 8.5vh; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; align-items: center; padding-right: 9vw; }
     .mana-btn { padding: 0.4vh 0.6vw; font-size: 1.3vh; border-radius: 0.3vh; border: none; color: white; cursor: pointer; font-weight: bold; }
@@ -304,7 +302,11 @@
     
     .card-rot-p2 { transform: rotate(160deg); }
     .card-rot-p3 { transform: rotate(-160deg); }
-    .card-tapped { transform: rotate(90deg) !important; }
+    /* 修正要件：タップ(横向き)は「縦の状態から中心を軸に右へ90度回転」させる。
+       相手カード(160deg/-160deg基準)でも、基準の向きに90度を足し合わせた角度にする（元の向きを無視しない） */
+    .card-tapped { transform: rotate(90deg); }
+    .card-rot-p2.card-tapped { transform: rotate(250deg); }
+    .card-rot-p3.card-tapped { transform: rotate(-70deg); }
 
     .left-action-zone { 
       width: 100%; 
@@ -324,32 +326,9 @@
     #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
     #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
 
-    /* 修正要件：ターン終了ボタンの代わりに、フェイズ進行4ボタンを縦書き風(1文字ずつ改行)横並びで空きスペースにぴったり収める */
-    #phase-button-row { display: flex; gap: 0.2vw; width: 100%; margin-top: 0.4vh; height: 9vh; }
-    .phase-btn {
-      flex: 1 1 0;
-      min-width: 0;
-      height: 100%;
-      overflow: hidden;
-      font-size: 0.85vh;
-      line-height: 1.15;
-      font-weight: bold;
-      border: none;
-      border-radius: 0.5vh;
-      background: #334155;
-      color: #e2e8f0;
-      cursor: pointer;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 0.2vh 0;
-      transition: background 0.15s ease;
-    }
-    .phase-btn:hover { background: #475569; }
-    #end-turn-btn.phase-btn { background: #ef4444; color: #fff; opacity: 0.4; }
-    #end-turn-btn.phase-btn:not(:disabled):hover { background: #f87171; }
+    /* 修正要件：フェイズ概念廃止に伴い、ターン終了ボタンは通常の横書きボタンに戻す */
+    #end-turn-btn { width: 100%; margin-top: 0.4vh; background: #ef4444; font-weight: bold; opacity: 0.4; }
+    #end-turn-btn:not(:disabled):hover { background: #f87171; }
 
     /* 手札エリア */
     #bottom-hand-panel { height: 16vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.4vh 0.6vh; display: flex; flex-direction: column; position: relative; }
@@ -475,6 +454,16 @@
     #track-right-p1 { bottom: 2vh; right: 20%; transform-origin: center center; transform: rotate(15deg); }
     .bar-flip { transform: rotate(180deg); }
 
+    /* 修正要件：棒のデザイン変更。左＝水色→赤、右＝緑→赤、上部＝水色→緑のグラデーション */
+    #track-left-p1 .bar-track-line { background: linear-gradient(to bottom, #22d3ee, #ef4444); }
+    #track-right-p1 .bar-track-line { background: linear-gradient(to bottom, #22c55e, #ef4444); }
+    #track-top .bar-track-line { background: linear-gradient(to right, #22d3ee, #22c55e); }
+
+    /* 修正要件：カード固定枠をプレイヤー識別色に（P1=赤/P2=水色/P3=緑）。ターン中は従来通り赤枠が優先される */
+    .lock-owner-0 { border-color: #ef4444; }
+    .lock-owner-1 { border-color: #22d3ee; }
+    .lock-owner-2 { border-color: #22c55e; }
+
     .counter-box { margin-top: 0.4vh; padding: 0.4vh; background: #1e1b4b; border: 0.1vh solid #6366f1; border-radius: 0.6vh; text-align: center; }
     .counter-btn { width: 1.8vw; height: 1.8vw; max-width: 2.5vh; max-height: 2.5vh; padding: 0; font-weight: bold; font-size: 1.4vh; border-radius: 0.4vh; background: #4f46e5; color: #fff; border: none; cursor: pointer; }
 
@@ -496,6 +485,27 @@
     }
     .turn-draw-card:hover { transform: translateY(-0.6vh); border-color: #fbbf24; }
     .turn-draw-card img { width: 100%; height: 100%; object-fit: contain; }
+    /* 修正要件：ターン開始時の1枚表示はさらに大きく */
+    .turn-draw-card.single { width: 22vw; height: 55vh; }
+
+    /* 修正要件：獲得ライフ12到達時の勝敗表示 */
+    #game-over-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.9); display: none; align-items: center; justify-content: center;
+      z-index: 9800; cursor: pointer;
+    }
+    #game-over-text {
+      font-size: 3.2vh; font-weight: bold; text-align: center; line-height: 1.6;
+      padding: 3vh 4vw; border-radius: 1.6vh; background: rgba(15, 23, 42, 0.7);
+      text-shadow: 0 0.3vh 1vh rgba(0,0,0,0.8);
+    }
+
+    /* 修正要件：ホスト専用の再開ボタン（共有プレイエリア右下） */
+    #restart-buttons {
+      position: absolute; right: 0.6vw; bottom: 0.6vh; display: none; flex-direction: column;
+      gap: 0.4vh; z-index: 500;
+    }
+    #restart-buttons .game-btn { font-size: 1.1vh; padding: 0.7vh 0.8vw; }
 
     /* 修正要件：接続状態バナー */
     #conn-status-banner {
@@ -738,13 +748,8 @@
           <div class="left-action-zone" id="deck-return-top-zone"><b>デッキの上に戻す</b></div>
           <div class="left-action-zone" id="deck-bottom-zone"><b>デッキ一番下に戻す</b></div>
           <div class="left-action-zone" id="graveyard-zone"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
-          <!-- 修正要件：ターン終了ボタンをフェイズ進行ボタン4つ(縦書き横並び)に置き換え -->
-          <div id="phase-button-row">
-            <button class="phase-btn" onclick="setPhase('main1')">メ<br>イ<br>ン<br>フ<br>ェ<br>イ<br>ズ<br>1</button>
-            <button class="phase-btn" onclick="setPhase('battle')">バ<br>ト<br>ル<br>フ<br>ェ<br>イ<br>ズ</button>
-            <button class="phase-btn" onclick="setPhase('main2')">メ<br>イ<br>ン<br>フ<br>ェ<br>イ<br>ズ<br>2</button>
-            <button class="phase-btn" id="end-turn-btn" onclick="endTurn()" disabled>タ<br>ー<br>ン<br>終<br>了</button>
-          </div>
+          <!-- 修正要件：フェイズ概念を廃止し、通常の横書きターン終了ボタンに戻す -->
+          <button class="game-btn" id="end-turn-btn" onclick="endTurn()" disabled>ターン終了</button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.6vh;">
@@ -797,6 +802,11 @@
                 <div class="bar-node" onclick="setBarStage('right-p1', 4)">-2</div>
                 <div id="handle-right-p1" class="movable-bar-handle"></div>
               </div>
+            </div>
+            <!-- 修正要件：ゲーム終了後、共有プレイエリア右下にホスト専用の再開ボタンを表示 -->
+            <div id="restart-buttons">
+              <button class="game-btn" onclick="event.stopPropagation(); restartGame('blaze')">ブレイズで再開</button>
+              <button class="game-btn" onclick="event.stopPropagation(); restartGame('phantom')">ファントムで再開</button>
             </div>
           </div>
           
@@ -866,6 +876,11 @@
     <div id="turn-draw-modal">
       <div id="turn-draw-title">ターンドロー（カードをクリックして手札へ）</div>
       <div id="turn-draw-cards"></div>
+    </div>
+
+    <!-- 修正要件：獲得ライフ12到達での勝敗表示（クリックで閉じる） -->
+    <div id="game-over-overlay" onclick="hideGameOverOverlay()">
+      <div id="game-over-text"></div>
     </div>
 
     <!-- 修正要件：接続状態バナー・Undoボタン・アクションログ -->
@@ -1082,7 +1097,6 @@
       renderScoreBar();
       updateDeckStatus();
       updateLifeStatus();
-      updatePhaseDisplay();
     }
 
     /* 修正要件：ホスト側 - 新規接続の受け付け（枠が空いていれば再接続として認識） */
@@ -1760,6 +1774,12 @@
         case 'SET_TURN_PLAYER':
           applyTurnPlayer(data.payload.index);
           break;
+        case 'GAME_OVER':
+          showGameOverOverlay(data.payload.winnerIndex);
+          break;
+        case 'RESTART_GAME':
+          performGameReset();
+          break;
       }
     }
 
@@ -2045,10 +2065,6 @@
               slot.classList.add('life-slot');
               // 修正要件：自身の右ライフの残り枚数を表示
               slot.innerHTML = `<button class="btn-life-flip" onclick="revealLifeCard('right')">めくる</button><span>右L: <span id="own-right-life-count">-</span></span>`;
-            } else if (i === 3) {
-              // 修正要件：手前の固定枠の左右ライフの間に現在のフェイズを表示
-              slot.classList.add('empty-slot');
-              slot.innerHTML = `<span id="own-phase-display" style="font-size:1vh; color:#fbbf24; font-weight:bold;">-</span>`;
             } else if (i > 0 && i < 6) {
               slot.classList.add('empty-slot');
             } else if (i >= 7 && i <= 13) {
@@ -2075,6 +2091,7 @@
           zone.appendChild(slot);
         }
       });
+      updateLockZoneColors();
     }
 
     function updateLockSlotsLifeText() {
@@ -2111,6 +2128,19 @@
       return { element: document.getElementById('p3-lock-zone'), rotClass: 'card-rot-p3' };
     }
 
+    // 修正要件：P1=赤/P2=水色/P3=緑のプレイヤー識別色
+    const PLAYER_COLORS = ['#ef4444', '#22d3ee', '#22c55e'];
+
+    function updateLockZoneColors() {
+      for (let i = 0; i < 3; i++) {
+        const target = getLockZoneElement(i);
+        if (target.element) {
+          target.element.classList.remove('lock-owner-0', 'lock-owner-1', 'lock-owner-2');
+          target.element.classList.add(`lock-owner-${i}`);
+        }
+      }
+    }
+
     /* 修正要件：ターンの概念 */
     let turnPlayerIndex = null;
 
@@ -2119,27 +2149,9 @@
       updateTurnPlayerHighlight();
       updateEndTurnButton();
       if (index === myPlayerIndex) {
-        // 修正要件：自分のターンが始まったらフェイズをメインフェイズ1にリセット
-        myPhaseState = 'main1';
-        updatePhaseDisplay();
         showTurnAnnouncement();
         showTurnDrawModal();
       }
-    }
-
-    // 修正要件：フェイズ進行ボタン（メインフェイズ1/バトルフェイズ/メインフェイズ2）
-    let myPhaseState = 'main1';
-    const PHASE_LABELS = { main1: 'メインフェイズ1', battle: 'バトルフェイズ', main2: 'メインフェイズ2' };
-
-    function setPhase(phase) {
-      myPhaseState = phase;
-      updatePhaseDisplay();
-      broadcastLog(`${myDisplayName()}が${PHASE_LABELS[phase]}に移行しました`);
-    }
-
-    function updatePhaseDisplay() {
-      const el = document.getElementById('own-phase-display');
-      if (el) el.innerText = PHASE_LABELS[myPhaseState] || '-';
     }
 
     // 修正要件：セッション復帰/再接続時は「あなたのターンです」を出さずに状態だけ反映する
@@ -2168,7 +2180,8 @@
         updateDeckStatus();
         broadcastLog(`${myDisplayName()}の墓地がデッキに戻ってシャッフルされました`);
 
-        title.innerText = 'ターンドロー（3枚の中から1枚選んでください）';
+        // 修正要件：「どれか一枚を選択してください」ではなく、リフレッシュが起きたことを表示
+        title.innerText = 'デッキが無かった為、リフレッシュしました';
         const drawn = deckCards.slice(-3).reverse();
         drawn.forEach(card => {
           const el = document.createElement('div');
@@ -2189,7 +2202,7 @@
         title.innerText = 'ターンドロー（カードをクリックして手札へ）';
         const topCard = deckCards[deckCards.length - 1];
         const el = document.createElement('div');
-        el.className = 'turn-draw-card';
+        el.className = 'turn-draw-card single';
         el.innerHTML = `<img src="${topCard.img}" alt="card">`;
         el.onclick = () => {
           deckCards.pop();
@@ -2253,6 +2266,88 @@
       broadcast({ type: 'SET_TURN_PLAYER', payload: { index: next } });
       broadcastLog(`${myDisplayName()}がターンを終了しました`);
       untapOwnerLockedCards(next);
+    }
+
+    /* 修正要件：獲得ライフが12になったら勝敗を全員に通知する */
+    let gameEnded = false;
+    function checkWinCondition() {
+      if (gameEnded) return;
+      if ((playerStates[myPlayerIndex].lifeScore || 0) >= 12) {
+        gameEnded = true;
+        broadcast({ type: 'GAME_OVER', payload: { winnerIndex: myPlayerIndex } });
+      }
+    }
+
+    function showGameOverOverlay(winnerIndex) {
+      gameEnded = true;
+      const overlay = document.getElementById('game-over-overlay');
+      const text = document.getElementById('game-over-text');
+      if (!overlay || !text) return;
+      const isWinner = winnerIndex === myPlayerIndex;
+      text.innerText = isWinner ? 'ゲーム終了！！あなたの勝利です！！' : 'ゲーム終了！！あなたは敗北しました....';
+      text.style.color = isWinner ? '#fbbf24' : '#e2e8f0';
+      overlay.style.display = 'flex';
+      const restartBox = document.getElementById('restart-buttons');
+      if (restartBox) restartBox.style.display = isHost ? 'flex' : 'none';
+    }
+
+    function hideGameOverOverlay() {
+      const overlay = document.getElementById('game-over-overlay');
+      if (overlay) overlay.style.display = 'none';
+    }
+
+    /* 修正要件：ホストが「ブレイズで再開」「ファントムで再開」を押すと、全員をリセットしてドラフトからやり直す */
+    function restartGame(mode) {
+      if (!isHost) return;
+      broadcast({ type: 'RESTART_GAME', payload: {} });
+      selectCardMode(mode);
+    }
+
+    function performGameReset() {
+      gameEnded = false;
+      hideGameOverOverlay();
+      const restartBox = document.getElementById('restart-buttons');
+      if (restartBox) restartBox.style.display = 'none';
+
+      document.querySelectorAll('.placed-card').forEach(el => el.remove());
+      const handContainer = document.getElementById('hand-cards');
+      if (handContainer) handContainer.innerHTML = '';
+      const manaZoneEl = document.getElementById('mana-zone');
+      if (manaZoneEl) manaZoneEl.querySelectorAll('.mana-card').forEach(m => m.remove());
+
+      deckCards = [];
+      lifeDecks = { left: [], right: [] };
+      graveyards = [[], [], []];
+      localManaList = [];
+      currentRevealedLifeCard = null;
+      targetLifeSlotIndex = null;
+      revealedCardSource = null;
+      turnPlayerIndex = null;
+      gameHasStarted = false;
+      playerDeckReady = [false, false, false];
+      pickedCards = [];
+      poolCards = [];
+      mainDeck = [];
+      selectedSpecialCard = null;
+      playerPickReady = [false, false, false];
+      playerSelectedCards = [null, null, null];
+      currentRound = 1;
+      currentPick = 1;
+      playerPacks = [[], [], []];
+
+      playerStates = [
+        { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0, leftLifeCount: 8, rightLifeCount: 8 },
+        { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0, leftLifeCount: 8, rightLifeCount: 8 },
+        { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0, leftLifeCount: 8, rightLifeCount: 8 }
+      ];
+
+      document.getElementById('battle-view').style.display = 'none';
+      document.getElementById('deck-builder-view').style.display = 'none';
+      document.getElementById('draft-view').style.display = 'flex';
+      document.getElementById('header-bar').style.display = 'flex';
+      document.getElementById('draft-status-info').style.display = 'flex';
+      document.getElementById('deck-status-info').style.display = 'none';
+      document.getElementById('phase-title').innerText = '🃏 ドラフトフェーズ';
     }
 
     function showTurnAnnouncement() {
@@ -2366,19 +2461,12 @@
 
       updateDeckStatus();
       updateLifeStatus();
-      updatePhaseDisplay();
       broadcastPlayerState();
     }
 
     function updateDeckStatus() {
       document.getElementById('deck-count').innerText = deckCards.length;
       playerStates[myPlayerIndex].deckCount = deckCards.length;
-      
-      const refreshBtn = document.getElementById('refresh-btn');
-      if (refreshBtn) {
-        refreshBtn.disabled = (deckCards.length > 0);
-      }
-      
       broadcastPlayerState();
     }
 
@@ -2440,12 +2528,21 @@
       const p2Index = (myPlayerIndex + 1) % 3;
       const p3Index = (myPlayerIndex + 2) % 3;
 
-      document.getElementById('p2-overlay-title').innerText = playerNames[p2Index] || `プレイヤー ${p2Index + 1}`;
+      const p2Title = document.getElementById('p2-overlay-title');
+      p2Title.innerText = playerNames[p2Index] || `プレイヤー ${p2Index + 1}`;
+      // 修正要件：相手情報の枠色をプレイヤー識別色(絶対番号基準)に合わせる
+      p2Title.style.color = PLAYER_COLORS[p2Index];
+      const p2Overlay = document.getElementById('p2-overlay-info');
+      if (p2Overlay) p2Overlay.style.borderLeftColor = PLAYER_COLORS[p2Index];
       document.getElementById('p2-hand-count-overlay').innerText = playerStates[p2Index].handCount;
       document.getElementById('p2-deck-count-overlay').innerText = playerStates[p2Index].deckCount;
       document.getElementById('p2-gy-count-overlay').innerText = playerStates[p2Index].gyCount;
 
-      document.getElementById('p3-overlay-title').innerText = playerNames[p3Index] || `プレイヤー ${p3Index + 1}`;
+      const p3Title = document.getElementById('p3-overlay-title');
+      p3Title.innerText = playerNames[p3Index] || `プレイヤー ${p3Index + 1}`;
+      p3Title.style.color = PLAYER_COLORS[p3Index];
+      const p3Overlay = document.getElementById('p3-overlay-info');
+      if (p3Overlay) p3Overlay.style.borderRightColor = PLAYER_COLORS[p3Index];
       document.getElementById('p3-hand-count-overlay').innerText = playerStates[p3Index].handCount;
       document.getElementById('p3-deck-count-overlay').innerText = playerStates[p3Index].deckCount;
       document.getElementById('p3-gy-count-overlay').innerText = playerStates[p3Index].gyCount;
@@ -2604,6 +2701,7 @@
           playerStates[myPlayerIndex].lifeScore += 1;
           broadcastPlayerState();
           broadcastLog(`${myDisplayName()}が獲得ライフに追加しました`);
+          checkWinCondition();
           return;
         }
         if (inRect(returnTopZone)) {
@@ -2910,6 +3008,7 @@
               restoreCardToBoard(snap);
               broadcastPlayerState();
             });
+            checkWinCondition();
             return;
           }
 
@@ -2982,23 +3081,16 @@
           const insideSharedArea = me.clientX >= tableRectNow.left && me.clientX <= tableRectNow.right && me.clientY >= tableRectNow.top && me.clientY <= tableRectNow.bottom;
 
           if (!insideSharedArea) {
-            if (cardEl.dataset.fromHand === 'true') {
-              // 手札から出したばかりのカードは手札に戻す
-              addCardToHand(cardEl.cardDataObj);
-              removeBoardCard(cardEl.id);
-            } else {
-              // 元々場に出ていたカードは元の位置（元のスロット）に戻す
-              const revertData = {
-                id: cardEl.id, x: origX, y: origY,
-                slotOwnerIndex: origSlotOwner, slotIndex: origSlotIdx,
-                zIndex: highestZIndex
-              };
-              broadcast({ type: 'MOVE_BOARD_CARD', payload: revertData });
-              moveBoardCardLocal(revertData);
-            }
+            // 元々場に出ていたカードは元の位置（元のスロット）に戻す
+            const revertData = {
+              id: cardEl.id, x: origX, y: origY,
+              slotOwnerIndex: origSlotOwner, slotIndex: origSlotIdx,
+              zIndex: highestZIndex
+            };
+            broadcast({ type: 'MOVE_BOARD_CARD', payload: revertData });
+            moveBoardCardLocal(revertData);
             return;
           }
-          delete cardEl.dataset.fromHand;
 
           const closest = findClosestSlot(me.clientX, me.clientY);
           let finalSlotOwner = null;
@@ -3284,26 +3376,6 @@
         const cardEl = createCardElement(card, null, 'deckSearch');
         container.appendChild(cardEl);
       });
-    }
-
-    function refreshDeck() {
-      if (deckCards.length > 0) return alert('メインデッキにカードが残っているためリフレッシュできません');
-      if (graveyards[myPlayerIndex].length === 0) return alert('墓地にカードがありません');
-      // 修正要件：取り消せない操作のため実行前に確認する
-      if (!confirm(`墓地の${graveyards[myPlayerIndex].length}枚をデッキに戻してシャッフルします。よろしいですか？`)) return;
-      deckCards = deckCards.concat(graveyards[myPlayerIndex]);
-      graveyards[myPlayerIndex] = [];
-      shuffle(deckCards);
-      
-      for (let i = 0; i < 3; i++) {
-        if (deckCards.length > 0) {
-          addCardToHand(deckCards.pop());
-        }
-      }
-      
-      updateDeckStatus();
-      broadcastGraveyard(myPlayerIndex);
-      broadcastPlayerState();
     }
 
     function spawnMana(color) {
