@@ -393,9 +393,13 @@
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(3, 1fr); gap: 0.3vw; padding: 0.5vh; z-index: 2; pointer-events: auto;
     }
-    /* 修正要件：ターンプレイヤーのカード固定枠を赤枠で囲う */
+    /* 修正要件：ターンプレイヤーのカード固定枠は赤枠ではなく、周囲がオレンジ色にほんのり光る演出に変更 */
+    @keyframes turnZoneGlow {
+      0%, 100% { box-shadow: 0 0 1.2vh 0.3vh rgba(251, 146, 60, 0.6); }
+      50% { box-shadow: 0 0 2vh 0.6vh rgba(251, 146, 60, 0.9); }
+    }
     .lock-slot-container.turn-active {
-      border: 0.3vh solid #ef4444; box-shadow: 0 0 1.2vh rgba(239, 68, 68, 0.7);
+      animation: turnZoneGlow 1.6s ease-in-out infinite;
     }
     .lock-slot {
       width: 100%; height: 100%; border: 0.1vh dashed #475569; border-radius: 0.5vh;
@@ -454,6 +458,16 @@
     #track-right-p1 { bottom: 2vh; right: 20%; transform-origin: center center; transform: rotate(15deg); }
     .bar-flip { transform: rotate(180deg); }
 
+    /* 修正要件：棒が示す対戦カード(有利/不利)のラベル */
+    .bar-matchup-label {
+      position: absolute; font-size: 0.85vh; color: #cbd5e1; font-weight: bold;
+      background: rgba(15, 23, 42, 0.8); padding: 0.15vh 0.4vw; border-radius: 0.4vh;
+      white-space: nowrap; pointer-events: none; z-index: 23; border: 0.1vh solid #475569;
+    }
+    #matchup-top { top: 7.2vh; left: 50%; transform: translateX(-50%); }
+    #matchup-left-p1 { bottom: 0.2vh; left: 6%; }
+    #matchup-right-p1 { bottom: 0.2vh; right: 6%; }
+
     /* 修正要件：棒のデザイン変更。左＝水色→赤、右＝緑→赤、上部＝水色→緑のグラデーション */
     #track-left-p1 .bar-track-line { background: linear-gradient(to bottom, #22d3ee, #ef4444); }
     #track-right-p1 .bar-track-line { background: linear-gradient(to bottom, #22c55e, #ef4444); }
@@ -500,12 +514,21 @@
       text-shadow: 0 0.3vh 1vh rgba(0,0,0,0.8);
     }
 
-    /* 修正要件：ホスト専用の再開ボタン（共有プレイエリア右下） */
+    /* 修正要件：ホスト専用の再開ボタン（共有プレイエリア右下）。目立つようハイライト表示 */
     #restart-buttons {
       position: absolute; right: 0.6vw; bottom: 0.6vh; display: none; flex-direction: column;
       gap: 0.4vh; z-index: 500;
     }
-    #restart-buttons .game-btn { font-size: 1.1vh; padding: 0.7vh 0.8vw; }
+    @keyframes restartBtnPulse {
+      0%, 100% { box-shadow: 0 0 0.3vh 0.1vh #fbbf24; }
+      50% { box-shadow: 0 0 1.6vh 0.6vh #fbbf24; }
+    }
+    #restart-buttons .game-btn {
+      font-size: 1.1vh; padding: 0.7vh 0.8vw;
+      background: #d97706; color: #fff; outline: 0.2vh solid #fbbf24;
+      animation: restartBtnPulse 1s ease-in-out infinite;
+    }
+    #restart-buttons .game-btn:hover { background: #f59e0b; }
 
     /* 修正要件：接続状態バナー */
     #conn-status-banner {
@@ -781,6 +804,8 @@
                 <div id="handle-top" class="movable-bar-handle"></div>
               </div>
             </div>
+            <!-- 修正要件：棒が示す有利不利の対戦カードを表示するラベル -->
+            <div id="matchup-top" class="bar-matchup-label"></div>
 
             <!-- 左側の棒（修正要件：点に番号付与。上から+2,+1,-1,-2＝下から-2,-1,+1,+2） -->
             <div id="track-left-p1" class="bar-track-container bar-vertical">
@@ -792,6 +817,7 @@
                 <div id="handle-left-p1" class="movable-bar-handle"></div>
               </div>
             </div>
+            <div id="matchup-left-p1" class="bar-matchup-label"></div>
 
             <!-- 右側の棒（修正要件：点に番号付与。上から+2,+1,-1,-2＝下から-2,-1,+1,+2） -->
             <div id="track-right-p1" class="bar-track-container bar-vertical">
@@ -803,6 +829,7 @@
                 <div id="handle-right-p1" class="movable-bar-handle"></div>
               </div>
             </div>
+            <div id="matchup-right-p1" class="bar-matchup-label"></div>
             <!-- 修正要件：ゲーム終了後、共有プレイエリア右下にホスト専用の再開ボタンを表示 -->
             <div id="restart-buttons">
               <button class="game-btn" onclick="event.stopPropagation(); restartGame('blaze')">ブレイズで再開</button>
@@ -933,7 +960,6 @@
     let reconnectTimer = null;
     let autoSaveTimer = null;
     let currentPhase = 'lobby'; // 'lobby' | 'draft' | 'deckbuilder' | 'battle'
-    let barStageState = { top: 1, 'left-p1': 1, 'right-p1': 1 };
 
     let playerNames = ['P1', 'P2', 'P3'];
     let myName = '';
@@ -1256,7 +1282,7 @@
         playerNames, cardFolder,
         playerStates, graveyards,
         boardCards: buildBoardCardsSnapshot(),
-        barStages: Object.assign({}, barStageState),
+        pairStage: Object.assign({}, pairStage),
         turnPlayerIndex: (typeof turnPlayerIndex !== 'undefined') ? turnPlayerIndex : null
       };
     }
@@ -1269,8 +1295,9 @@
       if (pub.graveyards) graveyards = pub.graveyards;
       document.querySelectorAll('.placed-card').forEach(el => el.remove());
       (pub.boardCards || []).forEach(data => syncBoardCardLocal(data));
-      if (pub.barStages) {
-        Object.keys(pub.barStages).forEach(pos => updateBarStageLocal(pos, pub.barStages[pos]));
+      if (pub.pairStage) {
+        pairStage = pub.pairStage;
+        renderAllBarsForMe();
       }
       // 修正要件：再接続/復帰時にもターン状態を復元（アナウンスは出さない）
       if (pub.turnPlayerIndex !== null && pub.turnPlayerIndex !== undefined && typeof applyTurnPlayerSilent === 'function') {
@@ -1762,8 +1789,10 @@
           graveyards[data.payload.ownerIndex] = data.payload.graveyard;
           renderGraveyardList();
           break;
-        case 'SYNC_BAR_STAGE':
-          updateBarStageLocal(data.payload.position, data.payload.stage);
+        case 'SYNC_PAIR_STAGE':
+          // 修正要件：正準ペア値を受け取り、自分の視点で3本すべてを再描画する
+          pairStage[data.payload.pairKey] = data.payload.stage;
+          renderAllBarsForMe();
           break;
         case 'ACTION_LOG':
           logAction(data.payload.message);
@@ -1943,19 +1972,90 @@
         trackRightP1.style.transform = 'rotate(15deg)';
       }
 
-      ['top', 'left-p1', 'right-p1'].forEach(pos => {
-        updateBarStageLocal(pos, 1);
+      // 修正要件：DOM要素の再配置後は、現在の正準ペア値から自分の視点で正しく再描画する
+      repositionMatchupLabels();
+      if (typeof renderAllBarsForMe === 'function') {
+        renderAllBarsForMe();
+      } else {
+        ['top', 'left-p1', 'right-p1'].forEach(pos => {
+          updateBarStageLocal(pos, 1);
+        });
+      }
+    }
+
+    // 修正要件：adjustPerspectiveBarLayoutでDOM要素(track-top/left-p1/right-p1)が
+    // 視点に応じて物理的に入れ替わるため、対応するラベルも同じ見た目の位置に追従させる
+    const VISUAL_SLOT_FOR_DOM = {
+      0: { 'left-p1': 'left', 'right-p1': 'right', 'top': 'top' },
+      1: { 'top': 'left', 'left-p1': 'right', 'right-p1': 'top' },
+      2: { 'right-p1': 'left', 'top': 'right', 'left-p1': 'top' }
+    };
+    const LABEL_VISUAL_POS = {
+      left: { bottom: '0.2vh', left: '6%', right: 'auto', top: 'auto', transform: 'none' },
+      right: { bottom: '0.2vh', right: '6%', left: 'auto', top: 'auto', transform: 'none' },
+      top: { top: '7.2vh', left: '50%', right: 'auto', bottom: 'auto', transform: 'translateX(-50%)' }
+    };
+    function repositionMatchupLabels() {
+      const mapping = VISUAL_SLOT_FOR_DOM[myPlayerIndex] || VISUAL_SLOT_FOR_DOM[0];
+      ['left-p1', 'right-p1', 'top'].forEach(domSuffix => {
+        const el = document.getElementById(`matchup-${domSuffix}`);
+        if (!el) return;
+        const visualSlot = mapping[domSuffix];
+        Object.assign(el.style, LABEL_VISUAL_POS[visualSlot]);
       });
     }
 
     /* 棒の操作関数 */
-    function setBarStage(pos, stage) {
-      broadcast({ type: 'SYNC_BAR_STAGE', payload: { position: pos, stage: stage } });
-      updateBarStageLocal(pos, stage);
+    // 修正要件：棒はプレイヤー同士のペアごとの有利不利を表す。
+    // 正準値は3ペア分だけ持ち(AB=P1視点でのP1対P2, AC=P1視点でのP1対P3, BC=P2視点でのP2対P3)、
+    // 各プレイヤーの画面では、そのプレイヤーの視点に応じて向き(反転)を変えて表示する。
+    // 注意：adjustPerspectiveBarLayout()が視点に応じてtrack-top/left-p1/right-p1のDOM要素そのものを
+    // 物理的に入れ替えて配置しているため（例：P2視点では見た目の「左」がDOM上は#track-top）、
+    // ここでのマッピングはDOM要素ID基準で、実際の見た目の配置に合わせて対応させている。
+    let pairStage = { AB: 1, AC: 1, BC: 1 };
+    const BAR_PAIR_MAP = {
+      0: { 'left-p1': { pairKey: 'AB', invert: false }, 'right-p1': { pairKey: 'AC', invert: false }, 'top': { pairKey: 'BC', invert: false } },
+      1: { 'top': { pairKey: 'BC', invert: false }, 'left-p1': { pairKey: 'AB', invert: true }, 'right-p1': { pairKey: 'AC', invert: true } },
+      2: { 'right-p1': { pairKey: 'BC', invert: true }, 'top': { pairKey: 'AC', invert: true }, 'left-p1': { pairKey: 'AB', invert: false } }
+    };
+
+    function setBarStage(pos, displayedStage) {
+      const map = BAR_PAIR_MAP[myPlayerIndex][pos];
+      if (!map) return;
+      const canonicalStage = map.invert ? (5 - displayedStage) : displayedStage;
+      pairStage[map.pairKey] = canonicalStage;
+      broadcast({ type: 'SYNC_PAIR_STAGE', payload: { pairKey: map.pairKey, stage: canonicalStage } });
+      renderAllBarsForMe();
+    }
+
+    // 修正要件：正準ペア値が更新されたら、自分の視点に応じて3本の棒すべてを再描画する
+    function renderAllBarsForMe() {
+      ['left-p1', 'right-p1', 'top'].forEach(pos => {
+        const map = BAR_PAIR_MAP[myPlayerIndex][pos];
+        const canonicalStage = pairStage[map.pairKey];
+        const displayStage = map.invert ? (5 - canonicalStage) : canonicalStage;
+        updateBarStageLocal(pos, displayStage);
+      });
+      updateMatchupLabels();
+    }
+
+    // 修正要件：各棒がどのプレイヤー同士の有利不利を示しているかをラベル表示する
+    // (ラベルの左側の名前が有利=上/不利=下 の主語になる)
+    const PAIR_PLAYERS = { AB: [0, 1], AC: [0, 2], BC: [1, 2] };
+    function updateMatchupLabels() {
+      ['left-p1', 'right-p1', 'top'].forEach(pos => {
+        const map = BAR_PAIR_MAP[myPlayerIndex][pos];
+        const el = document.getElementById(`matchup-${pos}`);
+        if (!el || !map) return;
+        let [a, b] = PAIR_PLAYERS[map.pairKey];
+        if (map.invert) { const tmp = a; a = b; b = tmp; }
+        const nameA = playerNames[a] || `P${a + 1}`;
+        const nameB = playerNames[b] || `P${b + 1}`;
+        el.innerText = `${nameA} vs ${nameB}`;
+      });
     }
 
     function updateBarStageLocal(pos, stage) {
-      barStageState[pos] = stage; // 修正要件：セッション復帰用に現在の段階を記録
       const handle = document.getElementById(`handle-${pos}`);
       const track = document.getElementById(`track-${pos}`);
       if (!handle || !track) return;
@@ -2315,6 +2415,12 @@
       const manaZoneEl = document.getElementById('mana-zone');
       if (manaZoneEl) manaZoneEl.querySelectorAll('.mana-card').forEach(m => m.remove());
 
+      // 修正要件：前回の対戦でピックしたカードが残らないよう、ドラフト/デッキ構築のDOM表示も明示的にクリアする
+      ['pack-cards', 'pool-cards', 'main-deck-cards', 'special-card-list'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+      });
+
       deckCards = [];
       lifeDecks = { left: [], right: [] };
       graveyards = [[], [], []];
@@ -2334,6 +2440,10 @@
       currentRound = 1;
       currentPick = 1;
       playerPacks = [[], [], []];
+      roundPacksPool = [];
+      selectedCard = null;
+      // 修正要件：棒の正準値もリセットして次の対戦をニュートラルな状態から始める
+      pairStage = { AB: 1, AC: 1, BC: 1 };
 
       playerStates = [
         { deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0, manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0, leftLifeCount: 8, rightLifeCount: 8 },
@@ -2453,7 +2563,8 @@
       if (selectedSpecialCard) {
         addCardToHand(selectedSpecialCard);
       }
-      for (let i = 0; i < 4; i++) {
+      // 修正要件：固定カード1枚＋デッキの上から5枚の合計6枚でスタート
+      for (let i = 0; i < 5; i++) {
         if (deckCards.length > 0) {
           addCardToHand(deckCards.pop());
         }
