@@ -468,10 +468,10 @@
     #matchup-left-p1 { bottom: 0.2vh; left: 6%; }
     #matchup-right-p1 { bottom: 0.2vh; right: 6%; }
 
-    /* 修正要件：棒のデザイン変更。左＝水色→赤、右＝緑→赤、上部＝水色→緑のグラデーション */
-    #track-left-p1 .bar-track-line { background: linear-gradient(to bottom, #22d3ee, #ef4444); }
-    #track-right-p1 .bar-track-line { background: linear-gradient(to bottom, #22c55e, #ef4444); }
-    #track-top .bar-track-line { background: linear-gradient(to right, #22d3ee, #22c55e); }
+    /* 修正要件：棒のグラデーションを廃止し、分かりやすい単色に統一 */
+    #track-left-p1 .bar-track-line,
+    #track-right-p1 .bar-track-line,
+    #track-top .bar-track-line { background: #475569; }
 
     /* 修正要件：カード固定枠をプレイヤー識別色に（P1=赤/P2=水色/P3=緑）。ターン中は従来通り赤枠が優先される */
     .lock-owner-0 { border-color: #ef4444; }
@@ -1672,12 +1672,18 @@
         renderScoreBar();
         startGame();
         // 修正要件：対戦開始時に先行プレイヤーを決定し、棒の位置を自動調整する（ホストのみが決定し全員に配信）
+        // 先行は2番手・3番手それぞれに微不利、2番手は3番手に微不利
+        // (段階1=有利/+2, 2=微有利/+1, 3=微不利/-1, 4=不利/-2 の対応)
         if (isHost) {
           const first = Math.floor(Math.random() * 3);
+          const second = (first + 1) % 3;
+          const third = (first + 2) % 3;
           broadcast({ type: 'SET_TURN_PLAYER', payload: { index: first } });
-          setBarStage('top', 3);       // 左から3段階目
-          setBarStage('left-p1', 3);   // 下から-1の位置
-          setBarStage('right-p1', 3);  // 下から-1の位置
+          setPairFavor(first, second, 3);
+          setPairFavor(first, third, 3);
+          setPairFavor(second, third, 3);
+          broadcast({ type: 'SYNC_PAIR_STAGE_ALL', payload: { pairStage: Object.assign({}, pairStage) } });
+          renderAllBarsForMe();
         }
       }
     }
@@ -1792,6 +1798,11 @@
         case 'SYNC_PAIR_STAGE':
           // 修正要件：正準ペア値を受け取り、自分の視点で3本すべてを再描画する
           pairStage[data.payload.pairKey] = data.payload.stage;
+          renderAllBarsForMe();
+          break;
+        case 'SYNC_PAIR_STAGE_ALL':
+          // 修正要件：対戦開始時など、3ペア分をまとめて同期する
+          pairStage = data.payload.pairStage;
           renderAllBarsForMe();
           break;
         case 'ACTION_LOG':
@@ -2018,6 +2029,15 @@
       1: { 'top': { pairKey: 'BC', invert: false }, 'left-p1': { pairKey: 'AB', invert: true }, 'right-p1': { pairKey: 'AC', invert: true } },
       2: { 'right-p1': { pairKey: 'BC', invert: true }, 'top': { pairKey: 'AC', invert: true }, 'left-p1': { pairKey: 'AB', invert: false } }
     };
+
+    // 修正要件：絶対プレイヤー番号2人と「Aから見た有利度(1-4)」を渡すだけで、
+    // 正準ペア値(AB/AC/BC、必ず番号の小さい方基準)へ正しく変換して設定するヘルパー
+    function setPairFavor(playerA, playerB, favorOfAStage) {
+      const lo = Math.min(playerA, playerB);
+      const hi = Math.max(playerA, playerB);
+      const pairKey = (lo === 0 && hi === 1) ? 'AB' : (lo === 0 && hi === 2) ? 'AC' : 'BC';
+      pairStage[pairKey] = (playerA === lo) ? favorOfAStage : (5 - favorOfAStage);
+    }
 
     function setBarStage(pos, displayedStage) {
       const map = BAR_PAIR_MAP[myPlayerIndex][pos];
