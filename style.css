@@ -415,6 +415,18 @@
     #p2-lock-zone { top: 9.5vh; left: 1%; transform: rotate(160deg); transform-origin: center center; }
     #p3-lock-zone { top: 9.5vh; right: 1%; transform: rotate(-160deg); transform-origin: center center; }
 
+    /* 修正要件：2人モードではP2の固定枠をまっすぐ手前(視認しやすい向き)に、P3の固定枠は非表示にする */
+    .two-player-mode #p2-lock-zone { top: 9.5vh; left: 50%; right: auto; transform: translateX(-50%); }
+    .two-player-mode #p3-lock-zone { display: none; }
+    .two-player-mode .card-rot-p2 { transform: rotate(0deg); }
+    .two-player-mode .card-rot-p2.card-tapped { transform: rotate(90deg); }
+    /* 修正要件：2人モードはP1vP2の対戦カードのみ意味を持つため、
+       他プレイヤー(P3)が絡む棒(top・right-p1)とそのラベルは非表示にする */
+    .two-player-mode #track-top,
+    .two-player-mode #track-right-p1,
+    .two-player-mode #matchup-top,
+    .two-player-mode #matchup-right-p1 { display: none; }
+
     .opponent-overlay-info {
       position: absolute; top: 0.8vh; background: rgba(15, 23, 42, 0.85);
       border: 0.1vh solid #334155; border-radius: 0.6vh; padding: 0.6vh 0.8vw;
@@ -462,6 +474,18 @@
     #track-left-p1 .bar-track-line,
     #track-right-p1 .bar-track-line,
     #track-top .bar-track-line { background: #475569; }
+
+    /* 修正要件：2人モードでは唯一意味のある棒(旧左の棒)をまっすぐ縦向きにして右側へ移動し、
+       左側には新しく8段階の少し長い棒を設置する
+       (実際の向き・位置の上書きはadjustPerspectiveBarLayout内でインラインstyleとして設定する。
+        adjustPerspectiveBarLayoutが視点ごとにインラインstyleを設定するため、
+        CSSだけでは優先度で負けてしまうため) */
+    .bar-secondary-2p { display: none; }
+    .two-player-mode .bar-secondary-2p {
+      display: flex; bottom: 1vh; left: 14%;
+      transform: none;
+      height: 28vh; /* 通常の棒(22vh)より少し長め */
+    }
 
     /* 修正要件：カード固定枠をプレイヤー識別色に（P1=赤/P2=水色/P3=緑）。ターン中は従来通り赤枠が優先される */
     .lock-owner-0 { border-color: #ef4444; }
@@ -515,10 +539,14 @@
     }
     #restart-buttons .game-btn {
       font-size: 1.1vh; padding: 0.7vh 0.8vw;
-      background: #d97706; color: #fff; outline: 0.2vh solid #fbbf24;
+      color: #fff; outline: 0.2vh solid #fbbf24;
       animation: restartBtnPulse 1s ease-in-out infinite;
     }
-    #restart-buttons .game-btn:hover { background: #f59e0b; }
+    /* 修正要件：ブレイズで再開＝赤、ファントムで再開＝紫 */
+    .restart-blaze-btn { background: #dc2626; }
+    .restart-blaze-btn:hover { background: #ef4444; }
+    .restart-phantom-btn { background: #7c3aed; }
+    .restart-phantom-btn:hover { background: #8b5cf6; }
 
     /* 修正要件：接続状態バナー */
     #conn-status-banner {
