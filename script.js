@@ -25,6 +25,9 @@
     let myId = '';
     let isHost = false;
     let myPlayerIndex = 0;
+    // 修正要件：2人/3人モードの切り替え。playerCountはmatchModeから導出する実プレイヤー人数
+    let matchMode = '3p'; // '2p' | '3p'
+    let playerCount = 3;
     // 修正要件：再接続時に同じ枠へ戻せるよう、connectionsはプレイヤー番号固定のスロット方式に変更(0は未使用/ホスト自身)
     let connections = [null, null, null];
     let hostConn = null;
@@ -112,6 +115,21 @@
       });
     })();
 
+    // 修正要件：2人/3人モードのチェックボックスは排他的に切り替える
+    function toggleMatchMode(mode) {
+      const cb2 = document.getElementById('mode-2p-checkbox');
+      const cb3 = document.getElementById('mode-3p-checkbox');
+      if (mode === '2p') {
+        cb2.checked = true;
+        cb3.checked = false;
+        matchMode = '2p';
+      } else {
+        cb3.checked = true;
+        cb2.checked = false;
+        matchMode = '3p';
+      }
+    }
+
     function createRoom() {
       const nameInput = document.getElementById('player-name-input').value.trim();
       if (!nameInput) return alert('プレイヤー名を入力してください');
@@ -121,7 +139,9 @@
 
       isHost = true;
       myPlayerIndex = 0;
-      updateLobbyStatus(`部屋を作成しました (${myName})。他のプレイヤーの接続を待っています... (1/3)`);
+      // 修正要件：作成時に選んだモードを反映（人数はここで確定させる）
+      playerCount = (matchMode === '2p') ? 2 : 3;
+      updateLobbyStatus(`部屋を作成しました (${myName})。他のプレイヤーの接続を待っています... (1/${playerCount})`);
       startAutoSaveLoop();
     }
 
@@ -191,6 +211,7 @@
       document.getElementById('deck-builder-view').style.display = 'none';
       document.getElementById('battle-view').style.display = 'flex';
       document.getElementById('header-bar').style.display = 'none';
+      document.getElementById('battle-view').classList.toggle('two-player-mode', playerCount === 2);
       currentPhase = 'battle';
       createAllLockSlots();
       adjustPerspectiveBarLayout();
@@ -454,9 +475,11 @@
       let deck = [...masterDeck];
       shuffle(deck);
 
-      let selectedPool = deck.slice(0, 117);
+      // 修正要件：2人モードは6パック(2人×3回)、3人モードは9パック(3人×3回)
+      const totalPacks = playerCount * 3;
+      let selectedPool = deck.slice(0, totalPacks * 13);
       let allPacks = [];
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < totalPacks; i++) {
         allPacks.push(selectedPool.splice(0, 13));
       }
 
@@ -481,6 +504,10 @@
       document.getElementById('lobby-view').style.display = 'none';
       currentPhase = 'draft';
       if (names) playerNames = names;
+      // 修正要件：2人モードで3枠目の未読み込みにより永久に「全員ピック完了」判定が
+      // 成立しなくなるバグを防ぐため、プレイヤー人数ぶんに配列サイズを揃える
+      playerPickReady = new Array(playerCount).fill(false);
+      playerSelectedCards = new Array(playerCount).fill(null);
       roundPacksPool = allPacks;
       startRound(1);
     }
@@ -488,13 +515,13 @@
     function startRound(roundNum) {
       currentRound = roundNum;
       currentPick = 1;
-      
-      const baseIdx = (roundNum - 1) * 3;
-      playerPacks = [
-        roundPacksPool[baseIdx],
-        roundPacksPool[baseIdx + 1],
-        roundPacksPool[baseIdx + 2]
-      ];
+
+      // 修正要件：1ラウンドあたりに配るパック数をplayerCountに合わせる
+      const baseIdx = (roundNum - 1) * playerCount;
+      playerPacks = [];
+      for (let i = 0; i < playerCount; i++) {
+        playerPacks.push(roundPacksPool[baseIdx + i]);
+      }
 
       updateDraftUI();
       renderPackCards();
@@ -503,10 +530,16 @@
     function updateDraftUI() {
       document.getElementById('round-num').innerText = currentRound;
       document.getElementById('pick-num').innerText = currentPick;
-      document.getElementById('remaining-packs').innerText = 9 - (currentRound - 1) * 3 - Math.floor((currentPick - 1) / 13) * 3;
+      // 修正要件：残パック数の計算をplayerCountに合わせる（2人=6パック/3人=9パック）
+      const totalPacks = playerCount * 3;
+      document.getElementById('remaining-packs').innerText = totalPacks - (currentRound - 1) * playerCount - Math.floor((currentPick - 1) / 13) * playerCount;
       document.getElementById('pack-count-label').innerText = `残 ${playerPacks[myPlayerIndex].length} 枚`;
-      
-      for (let i = 0; i < 3; i++) {
+
+      // 修正要件：2人モードではプレイヤー3の決定状況行を非表示にする
+      const p3Row = document.getElementById('p3-status-row');
+      if (p3Row) p3Row.style.display = (playerCount === 3) ? 'flex' : 'none';
+
+      for (let i = 0; i < playerCount; i++) {
         const nameEl = document.getElementById(`p${i + 1}-name-label`);
         if (nameEl) nameEl.innerText = playerNames[i] || `P${i + 1}`;
 
@@ -563,7 +596,7 @@
     }
 
     function processPassPacks() {
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < playerCount; i++) {
         const picked = playerSelectedCards[i];
         if (picked) {
           if (i === myPlayerIndex) {
@@ -577,15 +610,15 @@
 
       renderPickedCards();
 
-      const newPacks = [
-        playerPacks[2],
-        playerPacks[0],
-        playerPacks[1]
-      ];
+      // 修正要件：プレイヤー数に応じてパックを1人分ずつ回す（各プレイヤーは1つ前の人からパックを受け取る）
+      const newPacks = [];
+      for (let i = 0; i < playerCount; i++) {
+        newPacks.push(playerPacks[(i - 1 + playerCount) % playerCount]);
+      }
       playerPacks = newPacks;
 
-      playerPickReady = [false, false, false];
-      playerSelectedCards = [null, null, null];
+      playerPickReady = new Array(playerCount).fill(false);
+      playerSelectedCards = new Array(playerCount).fill(null);
 
       currentPick++;
       if (currentPick > 13) {
@@ -619,6 +652,9 @@
       document.getElementById('phase-title').innerText = '🛠 デッキ構築フェーズ';
       document.getElementById('draft-status-info').style.display = 'none';
       document.getElementById('deck-status-info').style.display = 'flex';
+
+      // 修正要件：デッキ準備完了判定も2人モードで正しく成立するよう配列サイズを揃える
+      playerDeckReady = new Array(playerCount).fill(false);
 
       poolCards = [...pickedCards];
       mainDeck = [];
@@ -743,17 +779,25 @@
         adjustPerspectiveBarLayout();
         renderScoreBar();
         startGame();
+        // 修正要件：2人モード専用の8段階の棒を初期位置(1段階目)にセット
+        updateSecondaryBarStageLocal(1);
         // 修正要件：対戦開始時に先行プレイヤーを決定し、棒の位置を自動調整する（ホストのみが決定し全員に配信）
-        // 先行は2番手・3番手それぞれに微不利、2番手は3番手に微不利
+        // 3人モード：先行は2番手・3番手それぞれに微不利、2番手は3番手に微不利
+        // 2人モード：先行は相手に微不利のみ設定（3番手は存在しないため）
         // (段階1=有利/+2, 2=微有利/+1, 3=微不利/-1, 4=不利/-2 の対応)
         if (isHost) {
-          const first = Math.floor(Math.random() * 3);
-          const second = (first + 1) % 3;
-          const third = (first + 2) % 3;
+          const first = Math.floor(Math.random() * playerCount);
           broadcast({ type: 'SET_TURN_PLAYER', payload: { index: first } });
-          setPairFavor(first, second, 3);
-          setPairFavor(first, third, 3);
-          setPairFavor(second, third, 3);
+          if (playerCount === 2) {
+            const second = (first + 1) % 2;
+            setPairFavor(first, second, 3);
+          } else {
+            const second = (first + 1) % 3;
+            const third = (first + 2) % 3;
+            setPairFavor(first, second, 3);
+            setPairFavor(first, third, 3);
+            setPairFavor(second, third, 3);
+          }
           broadcast({ type: 'SYNC_PAIR_STAGE_ALL', payload: { pairStage: Object.assign({}, pairStage) } });
           renderAllBarsForMe();
         }
@@ -778,18 +822,25 @@
       switch (data.type) {
         case 'INIT_PLAYER':
           myPlayerIndex = data.payload.index;
+          // 修正要件：ホストが決めたモード(人数)をクライアント側にも反映する
+          if (data.payload.playerCount) {
+            playerCount = data.payload.playerCount;
+            matchMode = (playerCount === 2) ? '2p' : '3p';
+          }
           break;
         case 'HELLO': {
           // 修正要件：新規参加/再接続の受付。resumeIndexが空いていればその枠に復帰させる
           if (!isHost || !senderConn) break;
           let assignIndex = null;
           const resumeIndex = data.payload.resumeIndex;
-          if ((resumeIndex === 1 || resumeIndex === 2) && (!connections[resumeIndex] || !connections[resumeIndex].open)) {
+          const maxIndex = playerCount - 1; // 修正要件：2人モードでは枠は1つだけ(index=1)
+          if (resumeIndex !== null && resumeIndex >= 1 && resumeIndex <= maxIndex && (!connections[resumeIndex] || !connections[resumeIndex].open)) {
             assignIndex = resumeIndex;
           }
           if (assignIndex === null) {
-            if (!connections[1] || !connections[1].open) assignIndex = 1;
-            else if (!connections[2] || !connections[2].open) assignIndex = 2;
+            for (let i = 1; i <= maxIndex; i++) {
+              if (!connections[i] || !connections[i].open) { assignIndex = i; break; }
+            }
           }
           if (assignIndex === null) {
             senderConn.send({ type: 'ROOM_FULL' });
@@ -798,17 +849,23 @@
           }
           connections[assignIndex] = senderConn;
           playerNames[assignIndex] = data.payload.name || playerNames[assignIndex] || `P${assignIndex + 1}`;
-          senderConn.send({ type: 'INIT_PLAYER', payload: { index: assignIndex } });
+          senderConn.send({ type: 'INIT_PLAYER', payload: { index: assignIndex, playerCount: playerCount } });
           updateConnStatusBanner();
-          updateLobbyStatus(`プレイヤーが参加しました (${playerNames.filter(n => n).length}/3)\n${playerNames.join(', ')}`);
+          updateLobbyStatus(`プレイヤーが参加しました (${playerNames.filter(n => n).length}/${playerCount})\n${playerNames.slice(0, playerCount).join(', ')}`);
           broadcastLog(`${playerNames[assignIndex]}が接続しました`);
 
           if (currentPhase !== 'lobby') {
             // ゲーム開始後の(再)接続 → 公開状態をまとめて送って追いつかせる
             senderConn.send({ type: 'RESYNC_STATE', payload: buildPublicSnapshot() });
-          } else if (connections[1] && connections[1].open && connections[2] && connections[2].open && playerNames.filter(n => n).length === 3) {
-            updateLobbyStatus('全員揃いました！カードモードを選択してください...');
-            openModeSelectModal();
+          } else {
+            let allConnected = true;
+            for (let i = 1; i <= maxIndex; i++) {
+              if (!connections[i] || !connections[i].open) { allConnected = false; break; }
+            }
+            if (allConnected && playerNames.slice(0, playerCount).filter(n => n).length === playerCount) {
+              updateLobbyStatus('全員揃いました！カードモードを選択してください...');
+              openModeSelectModal();
+            }
           }
           break;
         }
@@ -877,6 +934,10 @@
           pairStage = data.payload.pairStage;
           renderAllBarsForMe();
           break;
+        case 'SYNC_SECONDARY_BAR':
+          // 修正要件：2人モード専用、新しい8段階の棒の位置を同期する
+          updateSecondaryBarStageLocal(data.payload.stage);
+          break;
         case 'ACTION_LOG':
           logAction(data.payload.message);
           break;
@@ -899,22 +960,26 @@
       const scoreBar = document.getElementById('score-bar');
       if (!scoreBar) return;
 
-      let order = [(myPlayerIndex + 1) % 3, myPlayerIndex, (myPlayerIndex + 2) % 3];
+      // 修正要件：2人モードではプレイヤー3が存在しないため、剰余をplayerCountに合わせ、P3行を除外する
+      let order = (playerCount === 2)
+        ? [(myPlayerIndex + 1) % 2, myPlayerIndex]
+        : [(myPlayerIndex + 1) % 3, myPlayerIndex, (myPlayerIndex + 2) % 3];
 
       let html = '';
       order.forEach((pIdx, idx) => {
         const pNum = pIdx + 1;
         const pName = playerNames[pIdx] || `P${pNum}`;
         const isSelf = (pIdx === myPlayerIndex);
-        
+        const isLast = (idx === order.length - 1);
+
         let titleClass = `score-p${pNum}-title`;
-        let prefix = (idx === 0) ? '◀ ' : (idx === 2) ? ' ▶' : '★ ';
-        let titleText = isSelf 
+        let prefix = (idx === 0) ? '◀ ' : (isLast && !isSelf) ? '' : '★ ';
+        let titleText = isSelf
           ? `${prefix}${pName} (あなた)`
           : `${prefix}${pName}`;
 
         if (idx === 0 && !isSelf) titleText = `◀ ${pName}`;
-        if (idx === 2 && !isSelf) titleText = `${pName} ▶`;
+        if (isLast && !isSelf) titleText = `${pName} ▶`;
 
         html += `
           <div class="score-group">
@@ -1058,6 +1123,41 @@
 
       // 修正要件：DOM要素の再配置後は、現在の正準ペア値から自分の視点で正しく再描画する
       repositionMatchupLabels();
+      hideUnusedBarsForTwoPlayerMode();
+
+      // 修正要件：2人モードでは唯一表示される棒をまっすぐ縦向きにして右側へ移動する
+      // (このあとのadjustPerspectiveBarLayout内の分岐でインラインstyleが設定済みのため、
+      //  CSSではなくここで直接上書きする)
+      if (playerCount === 2) {
+        const usedPos = ['top', 'left-p1', 'right-p1'].find(pos => {
+          const m = BAR_PAIR_MAP[myPlayerIndex][pos];
+          return m && m.pairKey === 'AB';
+        });
+        const usedTrack = usedPos ? document.getElementById(`track-${usedPos}`) : null;
+        if (usedTrack) {
+          usedTrack.classList.add('bar-vertical');
+          usedTrack.classList.remove('bar-flip');
+          usedTrack.style.position = 'absolute';
+          usedTrack.style.left = 'auto';
+          usedTrack.style.right = '14%';
+          usedTrack.style.top = 'auto';
+          usedTrack.style.bottom = '1vh';
+          usedTrack.style.width = '1.6vw';
+          usedTrack.style.height = '22vh';
+          usedTrack.style.transform = 'none';
+        }
+        // 修正要件：棒を右側へ動かしたのに合わせて、対応するラベルも右側へ追従させる
+        // (repositionMatchupLabelsは通常視点の位置に配置済みのため、ここで上書きする)
+        const usedLabel = usedPos ? document.getElementById(`matchup-${usedPos}`) : null;
+        if (usedLabel) {
+          usedLabel.style.bottom = '0.2vh';
+          usedLabel.style.right = '6%';
+          usedLabel.style.left = 'auto';
+          usedLabel.style.top = 'auto';
+          usedLabel.style.transform = 'none';
+        }
+      }
+
       if (typeof renderAllBarsForMe === 'function') {
         renderAllBarsForMe();
       } else {
@@ -1065,6 +1165,28 @@
           updateBarStageLocal(pos, 1);
         });
       }
+    }
+
+    // 修正要件：2人モードでは対戦カードがP1vP2の1組しか存在しないため、
+    // それ以外の(未使用の)棒とラベルを非表示にする
+    function hideUnusedBarsForTwoPlayerMode() {
+      if (playerCount !== 2) {
+        ['top', 'left-p1', 'right-p1'].forEach(pos => {
+          const track = document.getElementById(`track-${pos}`);
+          const label = document.getElementById(`matchup-${pos}`);
+          if (track) track.style.display = '';
+          if (label) label.style.display = '';
+        });
+        return;
+      }
+      const mapping = BAR_PAIR_MAP[myPlayerIndex] || {};
+      ['top', 'left-p1', 'right-p1'].forEach(pos => {
+        const isUsed = mapping[pos] && mapping[pos].pairKey === 'AB';
+        const track = document.getElementById(`track-${pos}`);
+        const label = document.getElementById(`matchup-${pos}`);
+        if (track) track.style.display = isUsed ? '' : 'none';
+        if (label) label.style.display = isUsed ? '' : 'none';
+      });
     }
 
     // 修正要件：adjustPerspectiveBarLayoutでDOM要素(track-top/left-p1/right-p1)が
@@ -1151,9 +1273,11 @@
     }
 
     // 修正要件：P2視点で「右の棒」は上下を反対に、「上部の棒」は左右を反対にする
+    // P3視点は左右の棒(DOM: top, right-p1)を両方とも上下反対にする
     // (見た目の角度はそのまま。ハンドル位置の割合だけ反転させる)
     const BAR_REVERSED = {
-      1: { 'left-p1': true, 'right-p1': true }
+      1: { 'left-p1': true, 'right-p1': true },
+      2: { 'top': true, 'right-p1': true }
     };
 
     function updateBarStageLocal(pos, stage) {
@@ -1173,6 +1297,26 @@
         handle.style.left = `calc(${percentage}% - 0.75vw)`;
         handle.style.top = 'calc(50% - 3.25vh)';
       }
+    }
+
+    // 修正要件：2人モード専用、左側の新しい8段階の棒。
+    // 意味付け(何を示すか)は指定がないため、現時点ではプレイヤー間で位置を共有するだけの
+    // 汎用インジケーターとして実装。用途が決まり次第、setPairFavor等と同様に組み込み可能。
+    let secondaryBarStage = 1;
+
+    function setSecondaryBarStage(stage) {
+      secondaryBarStage = stage;
+      broadcast({ type: 'SYNC_SECONDARY_BAR', payload: { stage } });
+      updateSecondaryBarStageLocal(stage);
+    }
+
+    function updateSecondaryBarStageLocal(stage) {
+      secondaryBarStage = stage;
+      const handle = document.getElementById('handle-secondary-2p');
+      if (!handle) return;
+      const percentage = (stage - 1) * (100 / 7); // 8段階 = 7区間
+      handle.style.left = 'calc(50% - 1.9vw)';
+      handle.style.top = `calc(${percentage}% - 1.25vh)`;
     }
 
     /* カードプール */
@@ -1298,34 +1442,35 @@
     }
 
     function updateLockSlotsLifeText() {
-      const p2Index = (myPlayerIndex + 1) % 3;
-      const p3Index = (myPlayerIndex + 2) % 3;
-
+      const p2Index = (myPlayerIndex + 1) % playerCount;
       const p2Zone = document.getElementById('p2-lock-zone');
-      const p3Zone = document.getElementById('p3-lock-zone');
-
       if (p2Zone) {
         const p2Slots = p2Zone.querySelectorAll('.lock-slot');
         if (p2Slots[0]) p2Slots[0].innerText = `左ライフ: ${playerStates[p2Index].leftLifeCount}`;
         if (p2Slots[6]) p2Slots[6].innerText = `右ライフ: ${playerStates[p2Index].rightLifeCount}`;
       }
 
-      if (p3Zone) {
-        const p3Slots = p3Zone.querySelectorAll('.lock-slot');
-        if (p3Slots[0]) p3Slots[0].innerText = `左ライフ: ${playerStates[p3Index].leftLifeCount}`;
-        if (p3Slots[6]) p3Slots[6].innerText = `右ライフ: ${playerStates[p3Index].rightLifeCount}`;
+      // 修正要件：2人モードにはプレイヤー3が存在しないため対象外にする
+      if (playerCount === 3) {
+        const p3Index = (myPlayerIndex + 2) % 3;
+        const p3Zone = document.getElementById('p3-lock-zone');
+        if (p3Zone) {
+          const p3Slots = p3Zone.querySelectorAll('.lock-slot');
+          if (p3Slots[0]) p3Slots[0].innerText = `左ライフ: ${playerStates[p3Index].leftLifeCount}`;
+          if (p3Slots[6]) p3Slots[6].innerText = `右ライフ: ${playerStates[p3Index].rightLifeCount}`;
+        }
       }
     }
 
     function getDisplayTarget(ownerIndex) {
-      const relative = (ownerIndex - myPlayerIndex + 3) % 3;
+      const relative = (ownerIndex - myPlayerIndex + playerCount) % playerCount;
       if (relative === 0) return { slotKey: 'p1', rotClass: null }; 
       if (relative === 1) return { slotKey: 'p2', rotClass: 'card-rot-p2' }; 
       return { slotKey: 'p3', rotClass: 'card-rot-p3' }; 
     }
 
     function getLockZoneElement(targetOwnerIndex) {
-      const relative = (targetOwnerIndex - myPlayerIndex + 3) % 3;
+      const relative = (targetOwnerIndex - myPlayerIndex + playerCount) % playerCount;
       if (relative === 0) return { element: document.getElementById('p1-lock-zone'), rotClass: null };
       if (relative === 1) return { element: document.getElementById('p2-lock-zone'), rotClass: 'card-rot-p2' };
       return { element: document.getElementById('p3-lock-zone'), rotClass: 'card-rot-p3' };
@@ -1335,7 +1480,7 @@
     const PLAYER_COLORS = ['#ef4444', '#22d3ee', '#22c55e'];
 
     function updateLockZoneColors() {
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < playerCount; i++) {
         const target = getLockZoneElement(i);
         if (target.element) {
           target.element.classList.remove('lock-owner-0', 'lock-owner-1', 'lock-owner-2');
@@ -1351,7 +1496,9 @@
       turnPlayerIndex = index;
       updateTurnPlayerHighlight();
       updateEndTurnButton();
+      updateTurnRestrictedButtons();
       if (index === myPlayerIndex) {
+        trinityChargeUsedThisTurn = false; // 修正要件：新しい自分のターンでチャージ可能に戻す
         showTurnAnnouncement();
         showTurnDrawModal();
       }
@@ -1362,6 +1509,23 @@
       turnPlayerIndex = index;
       updateTurnPlayerHighlight();
       updateEndTurnButton();
+      updateTurnRestrictedButtons();
+    }
+
+    // 修正要件：トリニティドロー/トリニティチャージ/検索は、ターンプレイヤーのみ操作可能にする
+    // (獲得ライフに追加はドロップ先のため、別途ドロップ処理側でturnPlayerIndexチェックを行っている)
+    function updateTurnRestrictedButtons() {
+      const isMyTurn = turnPlayerIndex === myPlayerIndex;
+      ['trinity-draw-btn', 'trinity-charge-btn', 'deck-search-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.disabled = !isMyTurn;
+        btn.style.opacity = isMyTurn ? '1' : '0.4';
+        btn.style.cursor = isMyTurn ? 'pointer' : 'default';
+      });
+      // 獲得ライフに追加のドロップ枠も、見た目で分かるよう薄暗くする
+      const scoreZoneEl = document.getElementById('score-add-zone');
+      if (scoreZoneEl) scoreZoneEl.style.opacity = isMyTurn ? '1' : '0.4';
     }
 
     // 修正要件：ターン開始時、デッキの一番上のカードを画面中央に大きく表示。
@@ -1465,7 +1629,7 @@
 
     function endTurn() {
       if (turnPlayerIndex !== myPlayerIndex) return;
-      const next = (turnPlayerIndex + 1) % 3;
+      const next = (turnPlayerIndex + 1) % playerCount;
       broadcast({ type: 'SET_TURN_PLAYER', payload: { index: next } });
       broadcastLog(`${myDisplayName()}がターンを終了しました`);
       untapOwnerLockedCards(next);
@@ -1519,10 +1683,13 @@
       if (manaZoneEl) manaZoneEl.querySelectorAll('.mana-card').forEach(m => m.remove());
 
       // 修正要件：前回の対戦でピックしたカードが残らないよう、ドラフト/デッキ構築のDOM表示も明示的にクリアする
-      ['pack-cards', 'pool-cards', 'main-deck-cards', 'special-card-list'].forEach(id => {
+      // (picked-cardsのクリア漏れにより、リセット後も「獲得カード」の表示が残ってしまっていた)
+      ['pack-cards', 'pool-cards', 'main-deck-cards', 'special-card-list', 'picked-cards'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '';
       });
+      const pickedCountEl = document.getElementById('picked-count');
+      if (pickedCountEl) pickedCountEl.innerText = '0';
 
       deckCards = [];
       lifeDecks = { left: [], right: [] };
@@ -1580,7 +1747,8 @@
       if (zoneId === 'p1-lock-zone') relative = 0;
       if (zoneId === 'p2-lock-zone') relative = 1;
       if (zoneId === 'p3-lock-zone') relative = 2;
-      return (myPlayerIndex + relative) % 3;
+      // 修正要件：2人モードではプレイヤー3が存在しないため、剰余をplayerCountに合わせる
+      return (myPlayerIndex + relative) % playerCount;
     }
 
     function findClosestSlot(clientX, clientY) {
@@ -1623,7 +1791,9 @@
       if (!targetSlot) return null;
 
       const placedCards = Array.from(document.querySelectorAll(`.placed-card[data-slot-owner="${slotOwnerIndex}"][data-slot-idx="${slotIndex}"]`));
-      placedCards.sort((a, b) => (parseInt(a.style.zIndex) || 0) - (parseInt(b.style.zIndex) || 0));
+      // 修正要件：zIndexはクライアントごとに独立したローカルカウンタのため、視点によって重なり順(斜めオフセット)がズレていた。
+      // 全員で必ず一致するカードID(生成時に払い出され、同期される)を基準に並べ替えることで、誰から見ても同じ並び順にする。
+      placedCards.sort((a, b) => a.id.localeCompare(b.id));
 
       let stackIndex = placedCards.findIndex(el => el.id === cardId);
       if (stackIndex === -1) stackIndex = placedCards.length;
@@ -1649,6 +1819,8 @@
       document.getElementById('deck-builder-view').style.display = 'none';
       document.getElementById('battle-view').style.display = 'flex';
       document.getElementById('header-bar').style.display = 'none';
+      // 修正要件：2人モードではP2を正面向きに、P3関連の表示を消すためのクラス切り替え
+      document.getElementById('battle-view').classList.toggle('two-player-mode', playerCount === 2);
 
       document.getElementById('hand-cards').innerHTML = '';
 
@@ -1657,9 +1829,15 @@
 
       const lifePool = [...poolCards];
       shuffle(lifePool);
-      const half = Math.floor(lifePool.length / 2);
-      lifeDecks.left = lifePool.slice(0, half);
-      lifeDecks.right = lifePool.slice(half);
+      // 修正要件：2人モードは左ライフ4枚・右ライフ12枚の固定枚数に、3人モードは従来通り均等割り
+      if (playerCount === 2) {
+        lifeDecks.left = lifePool.slice(0, 4);
+        lifeDecks.right = lifePool.slice(4, 16);
+      } else {
+        const half = Math.floor(lifePool.length / 2);
+        lifeDecks.left = lifePool.slice(0, half);
+        lifeDecks.right = lifePool.slice(half);
+      }
 
       createAllLockSlots();
 
@@ -1715,7 +1893,7 @@
     }
 
     function updateAllPlayerStatsDisplay() {
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < playerCount; i++) {
         const pNum = i + 1;
         const st = playerStates[i];
         
@@ -1739,8 +1917,7 @@
         if (trEl) trEl.innerText = st.trinity;
       }
 
-      const p2Index = (myPlayerIndex + 1) % 3;
-      const p3Index = (myPlayerIndex + 2) % 3;
+      const p2Index = (myPlayerIndex + 1) % playerCount;
 
       const p2Title = document.getElementById('p2-overlay-title');
       p2Title.innerText = playerNames[p2Index] || `プレイヤー ${p2Index + 1}`;
@@ -1752,18 +1929,28 @@
       document.getElementById('p2-deck-count-overlay').innerText = playerStates[p2Index].deckCount;
       document.getElementById('p2-gy-count-overlay').innerText = playerStates[p2Index].gyCount;
 
-      const p3Title = document.getElementById('p3-overlay-title');
-      p3Title.innerText = playerNames[p3Index] || `プレイヤー ${p3Index + 1}`;
-      p3Title.style.color = PLAYER_COLORS[p3Index];
+      // 修正要件：2人モードにはプレイヤー3が存在しないため関連表示を隠す
       const p3Overlay = document.getElementById('p3-overlay-info');
-      if (p3Overlay) p3Overlay.style.borderRightColor = PLAYER_COLORS[p3Index];
-      document.getElementById('p3-hand-count-overlay').innerText = playerStates[p3Index].handCount;
-      document.getElementById('p3-deck-count-overlay').innerText = playerStates[p3Index].deckCount;
-      document.getElementById('p3-gy-count-overlay').innerText = playerStates[p3Index].gyCount;
+      if (playerCount === 3) {
+        const p3Index = (myPlayerIndex + 2) % 3;
+        if (p3Overlay) p3Overlay.style.display = '';
+        const p3Title = document.getElementById('p3-overlay-title');
+        p3Title.innerText = playerNames[p3Index] || `プレイヤー ${p3Index + 1}`;
+        p3Title.style.color = PLAYER_COLORS[p3Index];
+        if (p3Overlay) p3Overlay.style.borderRightColor = PLAYER_COLORS[p3Index];
+        document.getElementById('p3-hand-count-overlay').innerText = playerStates[p3Index].handCount;
+        document.getElementById('p3-deck-count-overlay').innerText = playerStates[p3Index].deckCount;
+        document.getElementById('p3-gy-count-overlay').innerText = playerStates[p3Index].gyCount;
+      } else if (p3Overlay) {
+        p3Overlay.style.display = 'none';
+      }
 
       for (let i = 0; i < 3; i++) {
         const btn = document.getElementById(`gy-tab-p${i}`);
-        if (btn) btn.innerText = playerNames[i] || `P${i + 1}`;
+        if (btn) {
+          btn.innerText = playerNames[i] || `P${i + 1}`;
+          btn.style.display = (i < playerCount) ? '' : 'none';
+        }
       }
 
       updateLockSlotsLifeText();
@@ -1910,7 +2097,7 @@
         const returnBottomZone = document.getElementById('deck-bottom-zone').getBoundingClientRect();
         const gyZone = document.getElementById('graveyard-zone').getBoundingClientRect();
 
-        if (inRect(scoreZone)) {
+        if (inRect(scoreZone) && turnPlayerIndex === myPlayerIndex) {
           if (wrapperEl) wrapperEl.remove();
           playerStates[myPlayerIndex].lifeScore += 1;
           broadcastPlayerState();
@@ -2217,7 +2404,7 @@
           const returnBottomZone = document.getElementById('deck-bottom-zone').getBoundingClientRect();
           const gyZone = document.getElementById('graveyard-zone').getBoundingClientRect();
 
-          if (me.clientX >= scoreZone.left && me.clientX <= scoreZone.right && me.clientY >= scoreZone.top && me.clientY <= scoreZone.bottom) {
+          if (me.clientX >= scoreZone.left && me.clientX <= scoreZone.right && me.clientY >= scoreZone.top && me.clientY <= scoreZone.bottom && turnPlayerIndex === myPlayerIndex) {
             const snap = captureSnap();
             playerStates[myPlayerIndex].lifeScore += 1;
             removeBoardCard(cardEl.id);
@@ -2509,7 +2696,11 @@
       // 注意：「左/右」は常に自分の視点での左右バーを指すため、DOM要素ID経由(setBarStage)ではなく、
       // 対戦カードを直接指定するsetPairFavorで設定する(視点によってDOM要素と見た目の左右が入れ替わるため)
       if (pool.length === 0) {
-        const opponent = (side === 'left') ? (myPlayerIndex + 1) % 3 : (myPlayerIndex + 2) % 3;
+        // 修正要件：2人モードは対戦相手が1人だけのため、左右どちらのライフデッキが尽きても
+        // 唯一の対戦相手との対戦カードを有利にする（3人モードは従来通り左右で相手を分ける）
+        const opponent = (playerCount === 2)
+          ? (myPlayerIndex + 1) % 2
+          : (side === 'left' ? (myPlayerIndex + 1) % 3 : (myPlayerIndex + 2) % 3);
         setPairFavor(myPlayerIndex, opponent, 1);
         broadcast({ type: 'SYNC_PAIR_STAGE_ALL', payload: { pairStage: Object.assign({}, pairStage) } });
         renderAllBarsForMe();
@@ -2588,6 +2779,8 @@
     function toggleDeckSearch() {
       const overlay = document.getElementById('deck-search-overlay');
       if (overlay.style.display === 'none' || overlay.style.display === '') {
+        // 修正要件：デッキ内検索を開く操作はターンプレイヤーのみ（閉じる操作は誰でも可能）
+        if (turnPlayerIndex !== myPlayerIndex) return;
         overlay.style.display = 'flex';
         renderDeckSearchList();
       } else {
@@ -2722,6 +2915,8 @@
 
     /* 修正要件：トリニティドロー（トリニティ3消費でデッキ一番上をドロー。誤操作防止のため確認あり） */
     function requestTrinityDraw() {
+      // 修正要件：ターンプレイヤーのみ操作可能
+      if (turnPlayerIndex !== myPlayerIndex) return;
       const trinity = playerStates[myPlayerIndex].trinity || 0;
       if (trinity < 3) return alert('トリニティが3つ未満のため実行できません');
       if (deckCards.length === 0) return alert('デッキが空です');
@@ -2738,8 +2933,12 @@
     /* 修正要件：トリニティチャージ（マナゾーン以外を暗転させ、新たに3枚横向きにすると決定ボタンが出現） */
     let trinityChargeActive = false;
     let trinityChargeNewlyTapped = new Set();
+    let trinityChargeUsedThisTurn = false; // 修正要件：1ターンに1度のみ
 
     function startTrinityCharge() {
+      // 修正要件：ターンプレイヤーのみ操作可能、かつ1ターンに1度のみ
+      if (turnPlayerIndex !== myPlayerIndex) return;
+      if (trinityChargeUsedThisTurn) return alert('トリニティチャージはこのターンで既に行いました');
       if (trinityChargeActive) return;
       trinityChargeActive = true;
       trinityChargeNewlyTapped = new Set();
@@ -2773,6 +2972,7 @@
       document.getElementById('counter-num').innerText = playerStates[myPlayerIndex].trinity;
       broadcastPlayerState();
       broadcastLog(`${myDisplayName()}がトリニティチャージを行いました`);
+      trinityChargeUsedThisTurn = true; // 修正要件：1ターンに1度のみ
       endTrinityChargeUI();
     }
 
