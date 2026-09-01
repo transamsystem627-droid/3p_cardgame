@@ -333,6 +333,13 @@
       <div id="turn-draw-cards"></div>
     </div>
 
+    <!-- 修正要件：2人対戦専用のマリガンUI（先行プレイヤー決定後、ターン開始前に表示） -->
+    <div id="mulligan-modal">
+      <div id="mulligan-title">マリガン（デッキに戻すカードをクリックして選択、最大5枚）</div>
+      <div id="mulligan-cards"></div>
+      <button id="mulligan-confirm-btn" class="game-btn" onclick="confirmMulligan()">決定（0枚をデッキに戻す）</button>
+    </div>
+
     <!-- 修正要件：獲得ライフ12到達での勝敗表示（クリックで閉じる） -->
     <div id="game-over-overlay" onclick="hideGameOverOverlay()">
       <div id="game-over-text"></div>
