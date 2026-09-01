@@ -779,29 +779,112 @@
         adjustPerspectiveBarLayout();
         renderScoreBar();
         startGame();
-        // 修正要件：2人モード専用の8段階の棒を初期位置(1段階目)にセット
-        updateSecondaryBarStageLocal(1);
         // 修正要件：対戦開始時に先行プレイヤーを決定し、棒の位置を自動調整する（ホストのみが決定し全員に配信）
         // 3人モード：先行は2番手・3番手それぞれに微不利、2番手は3番手に微不利
-        // 2人モード：先行は相手に微不利のみ設定（3番手は存在しないため）
-        // (段階1=有利/+2, 2=微有利/+1, 3=微不利/-1, 4=不利/-2 の対応)
+        // 2人モード：先行の視点で左の8段階棒は下から4段階目、右の4段階棒は下から2段階目に自動移動
+        // (段階1=有利/+2, 2=微有利/+1, 3=微不利/-1, 4=不利/-2 の対応。8段階棒は1=最も相手に有利,8=最も自分に有利)
         if (isHost) {
           const first = Math.floor(Math.random() * playerCount);
-          broadcast({ type: 'SET_TURN_PLAYER', payload: { index: first } });
           if (playerCount === 2) {
             const second = (first + 1) % 2;
-            setPairFavor(first, second, 3);
+            setPairFavor(first, second, 3);           // 右の棒：下から2段階目(=stage3)
+            setSecondaryPairFavor(first, second, 5);   // 左の棒：下から4段階目(=stage5、8段階中)
+            broadcast({ type: 'SYNC_PAIR_STAGE_ALL', payload: { pairStage: Object.assign({}, pairStage) } });
+            broadcast({ type: 'SYNC_SECONDARY_BAR', payload: { stage: secondaryPairStage } });
+            renderAllBarsForMe();
+            renderSecondaryBarForMe();
+
+            // 修正要件：2人対戦はターン開始前にマリガンを行う。先行プレイヤーのターン開始は
+            // 両者のマリガンが完了してから(MULLIGAN_CONFIRMEDが揃ってから)行う
+            pendingFirstPlayer = first;
+            mulliganConfirmedCount = 0;
+            broadcast({ type: 'START_MULLIGAN', payload: {} });
           } else {
             const second = (first + 1) % 3;
             const third = (first + 2) % 3;
+            broadcast({ type: 'SET_TURN_PLAYER', payload: { index: first } });
             setPairFavor(first, second, 3);
             setPairFavor(first, third, 3);
             setPairFavor(second, third, 3);
+            broadcast({ type: 'SYNC_PAIR_STAGE_ALL', payload: { pairStage: Object.assign({}, pairStage) } });
+            renderAllBarsForMe();
           }
-          broadcast({ type: 'SYNC_PAIR_STAGE_ALL', payload: { pairStage: Object.assign({}, pairStage) } });
-          renderAllBarsForMe();
         }
       }
+    }
+
+    // 修正要件：2人対戦専用のマリガン処理
+    let pendingFirstPlayer = null;
+    let mulliganConfirmedCount = 0;
+    let mulliganSelectedIds = new Set();
+
+    function showMulliganModal() {
+      const modal = document.getElementById('mulligan-modal');
+      const container = document.getElementById('mulligan-cards');
+      if (!modal || !container) return;
+      container.innerHTML = '';
+      mulliganSelectedIds = new Set();
+
+      // 修正要件：固定カードを除いた初期手札5枚だけを対象にする
+      const wrappers = Array.from(document.querySelectorAll('#hand-cards .hand-card-wrapper'))
+        .filter(w => w.dataset.fixed !== 'true');
+
+      wrappers.forEach(wrapper => {
+        const cardEl = wrapper.querySelector('.dummy-card');
+        const card = cardEl ? cardEl.__cardRef : null;
+        if (!card) return;
+        const el = document.createElement('div');
+        el.className = 'mulligan-card';
+        el.innerHTML = `<img src="${card.img}" alt="card">`;
+        el.onclick = () => {
+          if (mulliganSelectedIds.has(card.id)) {
+            mulliganSelectedIds.delete(card.id);
+            el.classList.remove('selected');
+          } else {
+            if (mulliganSelectedIds.size >= 5) return;
+            mulliganSelectedIds.add(card.id);
+            el.classList.add('selected');
+          }
+          updateMulliganConfirmLabel();
+        };
+        container.appendChild(el);
+      });
+
+      updateMulliganConfirmLabel();
+      modal.style.display = 'flex';
+    }
+
+    function updateMulliganConfirmLabel() {
+      const btn = document.getElementById('mulligan-confirm-btn');
+      if (btn) btn.innerText = `決定（${mulliganSelectedIds.size}枚をデッキに戻す）`;
+    }
+
+    function confirmMulligan() {
+      const handContainer = document.getElementById('hand-cards');
+      const count = mulliganSelectedIds.size;
+
+      // 修正要件：選択したカードをデッキに戻してシャッフルし、同じ枚数をデッキの上から引き直す
+      Array.from(handContainer.querySelectorAll('.hand-card-wrapper')).forEach(wrapper => {
+        const cardEl = wrapper.querySelector('.dummy-card');
+        const card = cardEl ? cardEl.__cardRef : null;
+        if (card && mulliganSelectedIds.has(card.id)) {
+          deckCards.push(card);
+          wrapper.remove();
+        }
+      });
+      shuffle(deckCards);
+
+      for (let i = 0; i < count; i++) {
+        if (deckCards.length > 0) addCardToHand(deckCards.pop());
+      }
+      updateDeckStatus();
+      broadcastPlayerState();
+      broadcastLog(`${myDisplayName()}がマリガンで${count}枚を引き直しました`);
+
+      const modal = document.getElementById('mulligan-modal');
+      if (modal) modal.style.display = 'none';
+
+      broadcast({ type: 'MULLIGAN_CONFIRMED', payload: {} });
     }
 
     let playerStates = [
@@ -935,8 +1018,21 @@
           renderAllBarsForMe();
           break;
         case 'SYNC_SECONDARY_BAR':
-          // 修正要件：2人モード専用、新しい8段階の棒の位置を同期する
-          updateSecondaryBarStageLocal(data.payload.stage);
+          // 修正要件：2人モード専用、8段階の棒も対戦相手との有利不利を表す正準値として同期する
+          secondaryPairStage = data.payload.stage;
+          renderSecondaryBarForMe();
+          break;
+        case 'START_MULLIGAN':
+          // 修正要件：先行プレイヤー決定後、ターン開始(デッキから1枚引く)前にマリガンを行う
+          showMulliganModal();
+          break;
+        case 'MULLIGAN_CONFIRMED':
+          // 修正要件：全員のマリガンが完了したら、ホストが先行プレイヤーのターンを開始する
+          mulliganConfirmedCount++;
+          if (isHost && pendingFirstPlayer !== null && mulliganConfirmedCount >= playerCount) {
+            broadcast({ type: 'SET_TURN_PLAYER', payload: { index: pendingFirstPlayer } });
+            pendingFirstPlayer = null;
+          }
           break;
         case 'ACTION_LOG':
           logAction(data.payload.message);
@@ -1143,7 +1239,8 @@
           usedTrack.style.top = 'auto';
           usedTrack.style.bottom = '1vh';
           usedTrack.style.width = '1.6vw';
-          usedTrack.style.height = '22vh';
+          // 修正要件：棒をもう少し長くし、共有プレイエリアの中央あたりの高さまで届くようにする
+          usedTrack.style.height = '26vh';
           usedTrack.style.transform = 'none';
         }
         // 修正要件：棒を右側へ動かしたのに合わせて、対応するラベルも右側へ追従させる
@@ -1299,19 +1396,32 @@
       }
     }
 
-    // 修正要件：2人モード専用、左側の新しい8段階の棒。
-    // 意味付け(何を示すか)は指定がないため、現時点ではプレイヤー間で位置を共有するだけの
-    // 汎用インジケーターとして実装。用途が決まり次第、setPairFavor等と同様に組み込み可能。
-    let secondaryBarStage = 1;
+    // 修正要件：2人モード専用、左側の8段階の棒も対戦相手との有利不利を表す。
+    // 4段階の棒(pairStage)と同じ考え方で、絶対プレイヤー番号の小さい方基準の正準値(1-8)を持ち、
+    // 各プレイヤーは自分の視点で(直接 or 9-N反転)表示する。
+    // (プレイヤー1視点で下からN段階目 ⇔ プレイヤー2視点では上からN段階目、という対称性はこれで自動的に成立する)
+    let secondaryPairStage = 1;
 
-    function setSecondaryBarStage(stage) {
-      secondaryBarStage = stage;
-      broadcast({ type: 'SYNC_SECONDARY_BAR', payload: { stage } });
-      updateSecondaryBarStageLocal(stage);
+    function setSecondaryPairFavor(playerA, playerB, favorOfAStage) {
+      const lo = Math.min(playerA, playerB);
+      secondaryPairStage = (playerA === lo) ? favorOfAStage : (9 - favorOfAStage);
+    }
+
+    // 修正要件：クリック操作(自分視点での段階)を正準値に変換して同期する
+    function setSecondaryBarStage(displayedStage) {
+      const canonicalStage = (myPlayerIndex === 0) ? displayedStage : (9 - displayedStage);
+      secondaryPairStage = canonicalStage;
+      broadcast({ type: 'SYNC_SECONDARY_BAR', payload: { stage: canonicalStage } });
+      renderSecondaryBarForMe();
+    }
+
+    // 修正要件：正準値から自分の視点での表示段階を計算して描画する
+    function renderSecondaryBarForMe() {
+      const displayedStage = (myPlayerIndex === 0) ? secondaryPairStage : (9 - secondaryPairStage);
+      updateSecondaryBarStageLocal(displayedStage);
     }
 
     function updateSecondaryBarStageLocal(stage) {
-      secondaryBarStage = stage;
       const handle = document.getElementById('handle-secondary-2p');
       if (!handle) return;
       const percentage = (stage - 1) * (100 / 7); // 8段階 = 7区間
@@ -1842,7 +1952,7 @@
       createAllLockSlots();
 
       if (selectedSpecialCard) {
-        addCardToHand(selectedSpecialCard);
+        addCardToHand(selectedSpecialCard, true);
       }
       // 修正要件：固定カード1枚＋デッキの上から5枚の合計6枚でスタート
       for (let i = 0; i < 5; i++) {
@@ -2008,10 +2118,12 @@
       document.getElementById('life-reveal-modal').style.display = 'none';
     }
 
-    function addCardToHand(card) {
+    function addCardToHand(card, isFixed = false) {
       const container = document.getElementById('hand-cards');
       const wrapper = document.createElement('div');
       wrapper.className = 'hand-card-wrapper';
+      // 修正要件：マリガン対象から固定カードを除外するための目印
+      wrapper.dataset.fixed = isFixed ? 'true' : 'false';
 
       const cardEl = document.createElement('div');
       cardEl.className = 'dummy-card';
