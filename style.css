@@ -415,8 +415,8 @@
     #p2-lock-zone { top: 9.5vh; left: 1%; transform: rotate(160deg); transform-origin: center center; }
     #p3-lock-zone { top: 9.5vh; right: 1%; transform: rotate(-160deg); transform-origin: center center; }
 
-    /* 修正要件：2人モードではP2の固定枠をまっすぐ手前(視認しやすい向き)に、P3の固定枠は非表示にする */
-    .two-player-mode #p2-lock-zone { top: 9.5vh; left: 50%; right: auto; transform: translateX(-50%); }
+    /* 修正要件：2人モードではP2の固定枠をまっすぐ手前(視認しやすい向き)に、共有プレイエリアの上端に配置。P3の固定枠は非表示にする */
+    .two-player-mode #p2-lock-zone { top: 0.3vh; left: 50%; right: auto; transform: translateX(-50%); }
     .two-player-mode #p3-lock-zone { display: none; }
     .two-player-mode .card-rot-p2 { transform: rotate(0deg); }
     .two-player-mode .card-rot-p2.card-tapped { transform: rotate(90deg); }
@@ -484,7 +484,7 @@
     .two-player-mode .bar-secondary-2p {
       display: flex; bottom: 1vh; left: 14%;
       transform: none;
-      height: 28vh; /* 通常の棒(22vh)より少し長め */
+      height: 32vh; /* 修正要件：右の棒(26vh)より少し長めにし、共有プレイエリア中央あたりまで届かせる */
     }
 
     /* 修正要件：カード固定枠をプレイヤー識別色に（P1=赤/P2=水色/P3=緑）。ターン中は従来通り赤枠が優先される */
@@ -515,6 +515,28 @@
     .turn-draw-card img { width: 100%; height: 100%; object-fit: contain; }
     /* 修正要件：ターン開始時の1枚表示はさらに大きく */
     .turn-draw-card.single { width: 22vw; height: 55vh; }
+
+    /* 修正要件：2人対戦専用のマリガンUI */
+    #mulligan-modal {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 9600; backdrop-filter: blur(0.6vh);
+    }
+    #mulligan-title { color: #fbbf24; font-size: 1.8vh; font-weight: bold; margin-bottom: 2vh; }
+    #mulligan-cards {
+      display: flex; gap: 1vw; justify-content: center; flex-wrap: wrap;
+      max-width: 80vw; margin-bottom: 2.5vh;
+    }
+    .mulligan-card {
+      width: 8vw; height: 20vh; background: #020617; border: 0.3vh solid #38bdf8; border-radius: 1vh;
+      cursor: pointer; overflow: hidden; transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .mulligan-card img { width: 100%; height: 100%; object-fit: contain; }
+    .mulligan-card.selected {
+      border-color: #ef4444; transform: translateY(-1vh);
+      box-shadow: 0 0 1.2vh rgba(239, 68, 68, 0.7);
+    }
+    #mulligan-confirm-btn { font-size: 1.3vh; padding: 1vh 2vw; }
 
     /* 修正要件：獲得ライフ12到達時の勝敗表示 */
     #game-over-overlay {
