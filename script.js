@@ -1373,30 +1373,43 @@
     // 物理的に入れ替えて配置しているため（例：P2視点では見た目の「左」がDOM上は#track-top）、
     // ここでのマッピングはDOM要素ID基準で、実際の見た目の配置に合わせて対応させている。
     let pairStage = { AB: 1, AC: 1, BC: 1 };
-    const BAR_PAIR_MAP = {
-      0: { 'left-p1': { pairKey: 'AB', invert: false }, 'right-p1': { pairKey: 'AC', invert: false }, 'top': { pairKey: 'BC', invert: false } },
-      1: { 'top': { pairKey: 'BC', invert: false }, 'left-p1': { pairKey: 'AB', invert: true }, 'right-p1': { pairKey: 'AC', invert: true } },
-      // 修正要件：P3視点で左右の棒の内容を入れ替える(視覚上の左=P3vP1、右=P3vP2になるようにする)
-      2: { 'top': { pairKey: 'AC', invert: true }, 'right-p1': { pairKey: 'BC', invert: true }, 'left-p1': { pairKey: 'AB', invert: false } }
-    };
 
-    // 修正要件：絶対プレイヤー番号2人と「Aから見た有利度(1-4)」を渡すだけで、
-    // 正準ペア値(AB/AC/BC、必ず番号の小さい方基準)へ正しく変換して設定するヘルパー
-    function setPairFavor(playerA, playerB, favorOfAStage) {
-      const lo = Math.min(playerA, playerB);
-      const hi = Math.max(playerA, playerB);
-      const pairKey = (lo === 0 && hi === 1) ? 'AB' : (lo === 0 && hi === 2) ? 'AC' : 'BC';
-      pairStage[pairKey] = (playerA === lo) ? favorOfAStage : (5 - favorOfAStage);
-    }
+const BAR_PAIR_MAP = {
+  0: { 
+    'left-p1': { pairKey: 'AB', invert: false }, 
+    'right-p1': { pairKey: 'AC', invert: false }, 
+    'top': { pairKey: 'BC', invert: false } 
+  },
+  1: { 
+    'top': { pairKey: 'BC', invert: false }, 
+    'left-p1': { pairKey: 'AB', invert: true }, 
+    'right-p1': { pairKey: 'AC', invert: true } 
+  },
+  // P3視点: 画面左=P3vP1(AC), 画面右=P3vP2(BC)
+  2: { 
+    'top': { pairKey: 'AB', invert: true }, 
+    'left-p1': { pairKey: 'AC', invert: true }, 
+    'right-p1': { pairKey: 'BC', invert: true } 
+  }
+};
 
-    function setBarStage(pos, displayedStage) {
-      const map = BAR_PAIR_MAP[myPlayerIndex][pos];
-      if (!map) return;
-      const canonicalStage = map.invert ? (5 - displayedStage) : displayedStage;
-      pairStage[map.pairKey] = canonicalStage;
-      broadcast({ type: 'SYNC_PAIR_STAGE', payload: { pairKey: map.pairKey, stage: canonicalStage } });
-      renderAllBarsForMe();
-    }
+// 絶対プレイヤー番号2人と「Aから見た有利度(1-4)」を渡すだけで、
+// 正準ペア値(AB/AC/BC、必ず番号の小さい方基準)へ正しく変換して設定するヘルパー
+function setPairFavor(playerA, playerB, favorOfAStage) {
+  const lo = Math.min(playerA, playerB);
+  const hi = Math.max(playerA, playerB);
+  const pairKey = (lo === 0 && hi === 1) ? 'AB' : (lo === 0 && hi === 2) ? 'AC' : 'BC';
+  pairStage[pairKey] = (playerA === lo) ? favorOfAStage : (5 - favorOfAStage);
+}
+
+function setBarStage(pos, displayedStage) {
+  const map = BAR_PAIR_MAP[myPlayerIndex][pos];
+  if (!map) return;
+  const canonicalStage = map.invert ? (5 - displayedStage) : displayedStage;
+  pairStage[map.pairKey] = canonicalStage;
+  broadcast({ type: 'SYNC_PAIR_STAGE', payload: { pairKey: map.pairKey, stage: canonicalStage } });
+  renderAllBarsForMe();
+}
 
     // 修正要件：正準ペア値が更新されたら、自分の視点に応じて3本の棒すべてを再描画する
     function renderAllBarsForMe() {
