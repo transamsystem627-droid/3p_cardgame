@@ -299,7 +299,10 @@
     }
     function updateConnStatusBanner() {
       if (!isHost) return;
-      const missing = [1, 2].filter(i => !connections[i] || !connections[i].open);
+      // 修正要件：2人モードにはプレイヤー3が存在しないため、実際のプレイヤー数分だけチェックする
+      const slotsToCheck = [];
+      for (let i = 1; i < playerCount; i++) slotsToCheck.push(i);
+      const missing = slotsToCheck.filter(i => !connections[i] || !connections[i].open);
       if (missing.length === 0) {
         hideConnBanner();
       } else {
@@ -779,6 +782,14 @@
         adjustPerspectiveBarLayout();
         renderScoreBar();
         startGame();
+
+        // 修正要件：マリガンは各クライアントが自分自身のstartGame()直後に必ずローカルで表示する。
+        // (以前はホストからのブロードキャスト(START_MULLIGAN)頼みだったため、
+        //  自分の手札がまだ反映され切っていないタイミングで届くと画像が空になる事故があった)
+        if (playerCount === 2) {
+          showMulliganModal();
+        }
+
         // 修正要件：対戦開始時に先行プレイヤーを決定し、棒の位置を自動調整する（ホストのみが決定し全員に配信）
         // 3人モード：先行は2番手・3番手それぞれに微不利、2番手は3番手に微不利
         // 2人モード：先行の視点で左の8段階棒は下から4段階目、右の4段階棒は下から2段階目に自動移動
@@ -798,7 +809,6 @@
             // 両者のマリガンが完了してから(MULLIGAN_CONFIRMEDが揃ってから)行う
             pendingFirstPlayer = first;
             mulliganConfirmedCount = 0;
-            broadcast({ type: 'START_MULLIGAN', payload: {} });
           } else {
             const second = (first + 1) % 3;
             const third = (first + 2) % 3;
@@ -1021,10 +1031,6 @@
           // 修正要件：2人モード専用、8段階の棒も対戦相手との有利不利を表す正準値として同期する
           secondaryPairStage = data.payload.stage;
           renderSecondaryBarForMe();
-          break;
-        case 'START_MULLIGAN':
-          // 修正要件：先行プレイヤー決定後、ターン開始(デッキから1枚引く)前にマリガンを行う
-          showMulliganModal();
           break;
         case 'MULLIGAN_CONFIRMED':
           // 修正要件：全員のマリガンが完了したら、ホストが先行プレイヤーのターンを開始する
@@ -1384,7 +1390,10 @@
 
       const isVertical = track.classList.contains('bar-vertical');
       let percentage = (stage - 1) * 33.33;
-      const reversed = BAR_REVERSED[myPlayerIndex] && BAR_REVERSED[myPlayerIndex][pos];
+      // 修正要件：BAR_REVERSEDは3人モードの物理的な棒の入れ替え(回転)を補正するためのものであり、
+      // 2人モードは別の仕組み(BAR_PAIR_MAPのinvertで正準値そのものを反転)で鏡写しを実現しているため、
+      // 2人モードでは重ねて適用しない（重ねると反転が相殺されて正しく動かなくなる）
+      const reversed = (playerCount !== 2) && BAR_REVERSED[myPlayerIndex] && BAR_REVERSED[myPlayerIndex][pos];
       if (reversed) percentage = 100 - percentage;
 
       if (isVertical) {
@@ -1939,10 +1948,16 @@
 
       const lifePool = [...poolCards];
       shuffle(lifePool);
-      // 修正要件：2人モードは左ライフ4枚・右ライフ12枚の固定枚数に、3人モードは従来通り均等割り
+      // 修正要件：2人モードは左右のライフ枚数を4枚/12枚の固定にする。
+      // プレイヤー2はプレイヤー1と向かい合う配置のため、左右が鏡写しになる(P1:左4/右12 → P2:左12/右4)
       if (playerCount === 2) {
-        lifeDecks.left = lifePool.slice(0, 4);
-        lifeDecks.right = lifePool.slice(4, 16);
+        if (myPlayerIndex === 1) {
+          lifeDecks.left = lifePool.slice(0, 12);
+          lifeDecks.right = lifePool.slice(12, 16);
+        } else {
+          lifeDecks.left = lifePool.slice(0, 4);
+          lifeDecks.right = lifePool.slice(4, 16);
+        }
       } else {
         const half = Math.floor(lifePool.length / 2);
         lifeDecks.left = lifePool.slice(0, half);
