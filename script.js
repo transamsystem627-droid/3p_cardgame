@@ -147,11 +147,20 @@
 
     function joinRoom() {
       const nameInput = document.getElementById('player-name-input').value.trim();
+      const hostIdInputRaw = document.getElementById('host-id-input').value.trim();
+
+      // 修正要件：デバッグモード（名前"114514"・ホストID"1919810"で参加すると、
+      // 実際の通信を行わずランダムなカードで即座に対戦画面へ移行し、レイアウト確認ができる）
+      if (nameInput === '114514' && hostIdInputRaw === '1919810') {
+        enterDebugMode();
+        return;
+      }
+
       if (!nameInput) return alert('プレイヤー名を入力してください');
       if (!isNameLengthValid(nameInput)) return alert('プレイヤー名は全角6文字（半角12文字）以内で入力してください');
       myName = nameInput;
 
-      const hostId = document.getElementById('host-id-input').value.trim();
+      const hostId = hostIdInputRaw;
       if (!hostId) return alert('ホストIDを入力してください');
       isHost = false;
       lastKnownHostId = hostId;
@@ -159,6 +168,47 @@
       hostConn = peer.connect(hostId);
       attachHostConnHandlers();
       startAutoSaveLoop();
+    }
+
+    // 修正要件：デバッグモード本体。実通信は一切行わず、ローカルだけで対戦画面を構築する
+    function enterDebugMode() {
+      isHost = true;
+      myPlayerIndex = 0;
+      myName = 'デバッグ';
+      // その時点でチェックボックスで選ばれているモード(2人/3人)をそのまま使う
+      playerCount = (matchMode === '2p') ? 2 : 3;
+      playerNames = (playerCount === 2)
+        ? ['デバッグP1', 'デバッグP2']
+        : ['デバッグP1', 'デバッグP2', 'デバッグP3'];
+      connections = [null, null, null];
+
+      cardFolder = 'card-bl';
+      buildMasterDeck();
+
+      // ランダムなカードでメインデッキ・ライフデッキ用プールを構築
+      const shuffledPool = [...masterDeck];
+      shuffle(shuffledPool);
+      mainDeck = shuffledPool.slice(0, 23);
+      poolCards = shuffledPool.slice(23, 39);
+      selectedSpecialCard = SPECIAL_CARDS[Math.floor(Math.random() * SPECIAL_CARDS.length)];
+
+      playerStates = [];
+      for (let i = 0; i < playerCount; i++) {
+        playerStates.push({
+          deckCount: 23, gyCount: 0, handCount: 0, lifeScore: 0, manaCount: 0,
+          manaColors: { red: 0, yellow: 0, blue: 0, purple: 0 }, trinity: 0,
+          leftLifeCount: 8, rightLifeCount: 8
+        });
+      }
+      playerDeckReady = new Array(playerCount).fill(true);
+      gameHasStarted = false;
+
+      document.getElementById('lobby-view').style.display = 'none';
+      document.getElementById('draft-view').style.display = 'none';
+      document.getElementById('deck-builder-view').style.display = 'none';
+
+      // 実際の対戦開始ロジック(先行決定・棒の自動調整・2人モードならマリガン等)をそのまま通す
+      checkAllDeckReady();
     }
 
     /* 修正要件：セッション復帰 */
