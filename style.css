@@ -416,10 +416,11 @@
     #p3-lock-zone { top: 9.5vh; right: 1%; transform: rotate(-160deg); transform-origin: center center; }
 
     /* 修正要件：2人モードではP2の固定枠をまっすぐ手前(視認しやすい向き)に、共有プレイエリアの上端に配置。P3の固定枠は非表示にする */
-    .two-player-mode #p2-lock-zone { top: 0.3vh; left: 50%; right: auto; transform: translateX(-50%); }
+    .two-player-mode #p2-lock-zone { top: 0.3vh; left: 50%; right: auto; transform: translateX(-50%) rotate(180deg); }
     .two-player-mode #p3-lock-zone { display: none; }
-    .two-player-mode .card-rot-p2 { transform: rotate(0deg); }
-    .two-player-mode .card-rot-p2.card-tapped { transform: rotate(90deg); }
+    /* 修正要件：対戦相手が出したカードも、対面する自分に向けて出されたように見えるよう180度回転 */
+    .two-player-mode .card-rot-p2 { transform: rotate(180deg); }
+    .two-player-mode .card-rot-p2.card-tapped { transform: rotate(270deg); }
     /* 修正要件：2人モードはP1vP2の対戦カードのみ意味を持つため、
        他プレイヤー(P3)が絡む棒(top・right-p1)とそのラベルは非表示にする */
     .two-player-mode #track-top,
