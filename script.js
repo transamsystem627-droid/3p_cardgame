@@ -1278,6 +1278,7 @@
       hideUnusedBarsForTwoPlayerMode();
 
       // 修正要件：2人モードでは唯一表示される棒をまっすぐ縦向きにして右側へ移動する
+      // ただし、プレイヤー2の画面では8段階の棒(左)と4段階の棒(右)の位置を入れ替える
       // (このあとのadjustPerspectiveBarLayout内の分岐でインラインstyleが設定済みのため、
       //  CSSではなくここで直接上書きする)
       if (playerCount === 2) {
@@ -1286,12 +1287,15 @@
           return m && m.pairKey === 'AB';
         });
         const usedTrack = usedPos ? document.getElementById(`track-${usedPos}`) : null;
+        // 修正要件：プレイヤー2の画面だけ4段階棒を左、8段階棒を右にする
+        const fourStageSide = (myPlayerIndex === 1) ? 'left' : 'right';
+        const eightStageSide = (myPlayerIndex === 1) ? 'right' : 'left';
         if (usedTrack) {
           usedTrack.classList.add('bar-vertical');
           usedTrack.classList.remove('bar-flip');
           usedTrack.style.position = 'absolute';
-          usedTrack.style.left = 'auto';
-          usedTrack.style.right = '14%';
+          usedTrack.style.left = (fourStageSide === 'left') ? '14%' : 'auto';
+          usedTrack.style.right = (fourStageSide === 'right') ? '14%' : 'auto';
           usedTrack.style.top = 'auto';
           usedTrack.style.bottom = '1vh';
           usedTrack.style.width = '1.6vw';
@@ -1299,13 +1303,18 @@
           usedTrack.style.height = '26vh';
           usedTrack.style.transform = 'none';
         }
-        // 修正要件：棒を右側へ動かしたのに合わせて、対応するラベルも右側へ追従させる
+        const secondaryTrack = document.getElementById('track-secondary-2p');
+        if (secondaryTrack) {
+          secondaryTrack.style.left = (eightStageSide === 'left') ? '14%' : 'auto';
+          secondaryTrack.style.right = (eightStageSide === 'right') ? '14%' : 'auto';
+        }
+        // 修正要件：棒を移動したのに合わせて、対応するラベルも同じ側へ追従させる
         // (repositionMatchupLabelsは通常視点の位置に配置済みのため、ここで上書きする)
         const usedLabel = usedPos ? document.getElementById(`matchup-${usedPos}`) : null;
         if (usedLabel) {
           usedLabel.style.bottom = '0.2vh';
-          usedLabel.style.right = '6%';
-          usedLabel.style.left = 'auto';
+          usedLabel.style.left = (fourStageSide === 'left') ? '6%' : 'auto';
+          usedLabel.style.right = (fourStageSide === 'right') ? '6%' : 'auto';
           usedLabel.style.top = 'auto';
           usedLabel.style.transform = 'none';
         }
@@ -1373,43 +1382,30 @@
     // 物理的に入れ替えて配置しているため（例：P2視点では見た目の「左」がDOM上は#track-top）、
     // ここでのマッピングはDOM要素ID基準で、実際の見た目の配置に合わせて対応させている。
     let pairStage = { AB: 1, AC: 1, BC: 1 };
+    const BAR_PAIR_MAP = {
+      0: { 'left-p1': { pairKey: 'AB', invert: false }, 'right-p1': { pairKey: 'AC', invert: false }, 'top': { pairKey: 'BC', invert: false } },
+      1: { 'top': { pairKey: 'BC', invert: false }, 'left-p1': { pairKey: 'AB', invert: true }, 'right-p1': { pairKey: 'AC', invert: true } },
+      // 修正要件：P3視点で左右の棒の内容を入れ替える(視覚上の左=P3vP1、右=P3vP2になるようにする)
+      2: { 'top': { pairKey: 'AC', invert: true }, 'right-p1': { pairKey: 'BC', invert: true }, 'left-p1': { pairKey: 'AB', invert: false } }
+    };
 
-const BAR_PAIR_MAP = {
-  0: { 
-    'left-p1': { pairKey: 'AB', invert: false }, 
-    'right-p1': { pairKey: 'AC', invert: false }, 
-    'top': { pairKey: 'BC', invert: false } 
-  },
-  1: { 
-    'top': { pairKey: 'BC', invert: false }, 
-    'left-p1': { pairKey: 'AB', invert: true }, 
-    'right-p1': { pairKey: 'AC', invert: true } 
-  },
-  // P3視点: 画面左=P3vP1(AC), 画面右=P3vP2(BC)
-  2: { 
-    'top': { pairKey: 'AB', invert: true }, 
-    'left-p1': { pairKey: 'AC', invert: true }, 
-    'right-p1': { pairKey: 'BC', invert: true } 
-  }
-};
+    // 修正要件：絶対プレイヤー番号2人と「Aから見た有利度(1-4)」を渡すだけで、
+    // 正準ペア値(AB/AC/BC、必ず番号の小さい方基準)へ正しく変換して設定するヘルパー
+    function setPairFavor(playerA, playerB, favorOfAStage) {
+      const lo = Math.min(playerA, playerB);
+      const hi = Math.max(playerA, playerB);
+      const pairKey = (lo === 0 && hi === 1) ? 'AB' : (lo === 0 && hi === 2) ? 'AC' : 'BC';
+      pairStage[pairKey] = (playerA === lo) ? favorOfAStage : (5 - favorOfAStage);
+    }
 
-// 絶対プレイヤー番号2人と「Aから見た有利度(1-4)」を渡すだけで、
-// 正準ペア値(AB/AC/BC、必ず番号の小さい方基準)へ正しく変換して設定するヘルパー
-function setPairFavor(playerA, playerB, favorOfAStage) {
-  const lo = Math.min(playerA, playerB);
-  const hi = Math.max(playerA, playerB);
-  const pairKey = (lo === 0 && hi === 1) ? 'AB' : (lo === 0 && hi === 2) ? 'AC' : 'BC';
-  pairStage[pairKey] = (playerA === lo) ? favorOfAStage : (5 - favorOfAStage);
-}
-
-function setBarStage(pos, displayedStage) {
-  const map = BAR_PAIR_MAP[myPlayerIndex][pos];
-  if (!map) return;
-  const canonicalStage = map.invert ? (5 - displayedStage) : displayedStage;
-  pairStage[map.pairKey] = canonicalStage;
-  broadcast({ type: 'SYNC_PAIR_STAGE', payload: { pairKey: map.pairKey, stage: canonicalStage } });
-  renderAllBarsForMe();
-}
+    function setBarStage(pos, displayedStage) {
+      const map = BAR_PAIR_MAP[myPlayerIndex][pos];
+      if (!map) return;
+      const canonicalStage = map.invert ? (5 - displayedStage) : displayedStage;
+      pairStage[map.pairKey] = canonicalStage;
+      broadcast({ type: 'SYNC_PAIR_STAGE', payload: { pairKey: map.pairKey, stage: canonicalStage } });
+      renderAllBarsForMe();
+    }
 
     // 修正要件：正準ペア値が更新されたら、自分の視点に応じて3本の棒すべてを再描画する
     function renderAllBarsForMe() {
