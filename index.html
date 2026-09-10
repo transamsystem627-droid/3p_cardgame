@@ -135,6 +135,24 @@
     <div id="special-card-section">
       <div class="section-title">固定カード（1枚選択）</div>
       <div id="special-card-list"></div>
+      <!-- 修正要件：ドラフトと同様に、デッキ作成の完了状況もわかるようにする -->
+      <div class="panel-box" id="deck-ready-status-panel">
+        <div class="section-title" style="margin:0;">全プレイヤーのデッキ準備状況</div>
+        <div class="player-status-list">
+          <div class="player-status-item">
+            <span id="db-p1-name-label">P1</span>
+            <span id="db-p1-status" class="ready-tag tag-waiting">作成中...</span>
+          </div>
+          <div class="player-status-item">
+            <span id="db-p2-name-label">P2</span>
+            <span id="db-p2-status" class="ready-tag tag-waiting">作成中...</span>
+          </div>
+          <div class="player-status-item" id="db-p3-status-row">
+            <span id="db-p3-name-label">P3</span>
+            <span id="db-p3-status" class="ready-tag tag-waiting">作成中...</span>
+          </div>
+        </div>
+      </div>
       <div style="flex:1;"></div>
       <button id="start-game-btn" class="action-btn" disabled onclick="confirmDeckReady()">対戦準備完了</button>
     </div>
