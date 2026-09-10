@@ -708,12 +708,35 @@
 
       // 修正要件：デッキ準備完了判定も2人モードで正しく成立するよう配列サイズを揃える
       playerDeckReady = new Array(playerCount).fill(false);
+      updateDeckReadyStatusDisplay();
 
       poolCards = [...pickedCards];
       mainDeck = [];
 
       renderDeckBuilder();
       renderSpecialCards();
+    }
+
+    // 修正要件：ドラフト同様、デッキ作成でも誰が完了したかわかるようにする
+    function updateDeckReadyStatusDisplay() {
+      const p3Row = document.getElementById('db-p3-status-row');
+      if (p3Row) p3Row.style.display = (playerCount === 3) ? 'flex' : 'none';
+
+      for (let i = 0; i < playerCount; i++) {
+        const nameEl = document.getElementById(`db-p${i + 1}-name-label`);
+        if (nameEl) nameEl.innerText = playerNames[i] || `P${i + 1}`;
+
+        const statusEl = document.getElementById(`db-p${i + 1}-status`);
+        if (statusEl) {
+          if (playerDeckReady[i]) {
+            statusEl.className = 'ready-tag tag-ready';
+            statusEl.innerText = '完了';
+          } else {
+            statusEl.className = 'ready-tag tag-waiting';
+            statusEl.innerText = '作成中...';
+          }
+        }
+      }
     }
 
     function renderDeckBuilder() {
@@ -813,6 +836,7 @@
       // 修正要件：確定後は編集できない取り消せない操作のため実行前に確認する
       if (!confirm('デッキを確定します。確定後は編集できません。よろしいですか？')) return;
       playerDeckReady[myPlayerIndex] = true;
+      updateDeckReadyStatusDisplay();
       document.getElementById('start-game-btn').disabled = true;
       document.getElementById('start-game-btn').innerText = '他のプレイヤーの準備待機中...';
 
@@ -1045,6 +1069,7 @@
           break;
         case 'PLAYER_DECK_READY':
           playerDeckReady[data.payload.playerIndex] = true;
+          updateDeckReadyStatusDisplay();
           checkAllDeckReady();
           break;
         case 'SYNC_BOARD_CARD':
@@ -1398,9 +1423,14 @@
       pairStage[pairKey] = (playerA === lo) ? favorOfAStage : (5 - favorOfAStage);
     }
 
-    function setBarStage(pos, displayedStage) {
+    function setBarStage(pos, clickedStage) {
       const map = BAR_PAIR_MAP[myPlayerIndex][pos];
       if (!map) return;
+      // 修正要件：BAR_REVERSED(表示上の左右/上下反転)が適用されている棒は、
+      // クリックしたノードの見た目位置と一致するよう、まずクリック値を実際の表示段階に変換してから使う
+      // (これをしないと、反転された棒でクリックした場所と反対側にハンドルが移動してしまう)
+      const reversed = (playerCount !== 2) && BAR_REVERSED[myPlayerIndex] && BAR_REVERSED[myPlayerIndex][pos];
+      const displayedStage = reversed ? (5 - clickedStage) : clickedStage;
       const canonicalStage = map.invert ? (5 - displayedStage) : displayedStage;
       pairStage[map.pairKey] = canonicalStage;
       broadcast({ type: 'SYNC_PAIR_STAGE', payload: { pairKey: map.pairKey, stage: canonicalStage } });
