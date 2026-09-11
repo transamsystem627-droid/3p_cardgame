@@ -182,7 +182,8 @@
         : ['デバッグP1', 'デバッグP2', 'デバッグP3'];
       connections = [null, null, null];
 
-      cardFolder = 'card-bl';
+      // 修正要件：デバッグモードでも2人モードなら専用フォルダ(card-br-2)を使う
+      cardFolder = (playerCount === 2) ? 'card-br-2' : 'card-bl';
       buildMasterDeck();
 
       // ランダムなカードでメインデッキ・ライフデッキ用プールを構築
@@ -493,7 +494,12 @@
     }
 
     function selectCardMode(mode) {
-      cardFolder = (mode === 'phantom') ? 'card-ph' : 'card-bl';
+      // 修正要件：2人モードはブレイズ=card-br-2、ファントム=card-ph-2の専用フォルダを使う
+      if (playerCount === 2) {
+        cardFolder = (mode === 'phantom') ? 'card-ph-2' : 'card-br-2';
+      } else {
+        cardFolder = (mode === 'phantom') ? 'card-ph' : 'card-bl';
+      }
       document.getElementById('mode-select-modal').style.display = 'none';
       
       broadcast({
@@ -504,9 +510,18 @@
       startDraft();
     }
 
+    // 修正要件：2人モードは抽選対象のカード総数が異なる(ブレイズ348枚/ファントム346枚)。固定カード(4枚)は変更なし
+    function getMasterDeckCardCount() {
+      if (playerCount === 2) {
+        return (cardFolder === 'card-ph-2') ? 346 : 348;
+      }
+      return 351;
+    }
+
     function buildMasterDeck() {
       masterDeck = [];
-      for (let i = 1; i <= 351; i++) {
+      const cardCount = getMasterDeckCardCount();
+      for (let i = 1; i <= cardCount; i++) {
         masterDeck.push({
           id: `c_${i}`,
           img: `${cardFolder}/c_${i}.jpg`
@@ -920,6 +935,10 @@
         const el = document.createElement('div');
         el.className = 'mulligan-card';
         el.innerHTML = `<img src="${card.img}" alt="card">`;
+        // 修正要件：マリガン時に拡大表示されたカードも、対戦中と同様にホバーでさらに拡大プレビューする
+        el.onmouseenter = (e) => showPreview(card, e);
+        el.onmousemove = (e) => movePreview(e);
+        el.onmouseleave = () => hidePreview();
         el.onclick = () => {
           if (mulliganSelectedIds.has(card.id)) {
             mulliganSelectedIds.delete(card.id);
