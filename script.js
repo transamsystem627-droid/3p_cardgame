@@ -182,8 +182,8 @@
         : ['デバッグP1', 'デバッグP2', 'デバッグP3'];
       connections = [null, null, null];
 
-      // 修正要件：デバッグモードでも2人モードなら専用フォルダ(card-br-2)を使う
-      cardFolder = (playerCount === 2) ? 'card-br-2' : 'card-bl';
+      // 修正要件：デバッグモードでも2人モードなら専用フォルダ(card-bl-2)を使う
+      cardFolder = (playerCount === 2) ? 'card-bl-2' : 'card-bl';
       buildMasterDeck();
 
       // ランダムなカードでメインデッキ・ライフデッキ用プールを構築
@@ -494,9 +494,9 @@
     }
 
     function selectCardMode(mode) {
-      // 修正要件：2人モードはブレイズ=card-br-2、ファントム=card-ph-2の専用フォルダを使う
+      // 修正要件：2人モードはブレイズ=card-bl-2、ファントム=card-ph-2の専用フォルダを使う
       if (playerCount === 2) {
-        cardFolder = (mode === 'phantom') ? 'card-ph-2' : 'card-br-2';
+        cardFolder = (mode === 'phantom') ? 'card-ph-2' : 'card-bl-2';
       } else {
         cardFolder = (mode === 'phantom') ? 'card-ph' : 'card-bl';
       }
