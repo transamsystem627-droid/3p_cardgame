@@ -596,6 +596,16 @@
     .restart-phantom-btn { background: #7c3aed; }
     .restart-phantom-btn:hover { background: #8b5cf6; }
 
+    /* 修正要件：墓地送り/獲得ライフ追加/デッキ戻しのモード中であることを示す画面上部の帯 */
+    #action-mode-banner {
+      position: absolute; top: 0; left: 0; width: 100%; text-align: center;
+      padding: 0.7vh 1vw; font-size: 1.7vh; font-weight: bold; letter-spacing: 0.05vw;
+      z-index: 8000; display: none; box-shadow: 0 0.3vh 0.8vh rgba(0,0,0,0.6);
+    }
+    #action-mode-banner.mode-graveyard { background: rgba(46, 16, 101, 0.95); color: #ddd6fe; border-bottom: 0.25vh solid #8b5cf6; }
+    #action-mode-banner.mode-lifegain { background: rgba(3, 105, 161, 0.95); color: #e0f2fe; border-bottom: 0.25vh solid #38bdf8; }
+    #action-mode-banner.mode-deckreturn { background: rgba(44, 18, 21, 0.95); color: #fca5a5; border-bottom: 0.25vh solid #ef4444; }
+
     /* 修正要件：接続状態バナー */
     #conn-status-banner {
       position: absolute; top: 0.6vh; left: 50%; transform: translateX(-50%);
