@@ -3040,21 +3040,21 @@
         if (el) el.classList.toggle('action-mode-active', actionMode === key);
       });
 
-      // 修正要件：どのモードに入っているか一目で分かるよう、画面上部に帯でモード名を表示する
-      const banner = document.getElementById('action-mode-banner');
-      if (banner) {
-        banner.classList.remove('mode-graveyard', 'mode-lifegain', 'mode-deckreturn');
+      // 修正要件：どのモードに入っているか一目で分かるよう、ターン終了ボタンの下に大きく表示する
+      const display = document.getElementById('action-mode-display');
+      if (display) {
+        display.classList.remove('mode-graveyard', 'mode-lifegain', 'mode-deckreturn');
         if (actionMode) {
           const labels = {
-            graveyard: '墓地送りモード中：送りたいカードをクリックしてください',
-            lifegain: '獲得ライフ追加モード中：追加したいカードをクリックしてください',
-            deckreturn: 'デッキ戻しモード中：戻したいカードをクリックしてください'
+            graveyard: '墓地送りモード中',
+            lifegain: '獲得ライフ追加モード中',
+            deckreturn: 'デッキ戻しモード中'
           };
-          banner.classList.add('mode-' + actionMode);
-          banner.innerText = `${labels[actionMode]}（もう一度ボタンを押すと終了）`;
-          banner.style.display = 'block';
+          display.classList.add('mode-' + actionMode);
+          display.innerHTML = `${labels[actionMode]}<span class="action-mode-hint">カードをクリックしてください（もう一度ボタンを押すと終了）</span>`;
+          display.style.display = 'block';
         } else {
-          banner.style.display = 'none';
+          display.style.display = 'none';
         }
       }
     }
