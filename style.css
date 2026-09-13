@@ -218,7 +218,7 @@
     #mana-zone { border-color: #3b82f6; background: #091e3a; height: 8.5vh; position: relative; overflow-x: auto; overflow-y: hidden; display: flex; align-items: center; padding-right: 9vw; }
     .mana-btn { padding: 0.4vh 0.6vw; font-size: 1.3vh; border-radius: 0.3vh; border: none; color: white; cursor: pointer; font-weight: bold; }
     
-    /* 修正要件：マナカードを少しだけ横長に（縦長の形は維持） 1.95vw -> 2.3vw */
+    /* 修正要件：カラーカードを少しだけ横長に（縦長の形は維持） 1.95vw -> 2.3vw */
     .mana-card { 
       width: 2.3vw; 
       height: 6.5vh; 
@@ -339,7 +339,7 @@
        内容量に応じて伸縮し、はみ出す分だけ内部スクロールするようにする */
     .tray-list { display: flex; flex-direction: column; gap: 0.6vh; overflow-y: auto; flex: 0 1 auto; min-height: 0; max-height: 100%; padding-right: 0.2vw; }
 
-    /* 修正要件：デッキ内検索の手札・マナエリアを覆い隠すオーバーレイ */
+    /* 修正要件：デッキ内検索の手札・カラーエリアを覆い隠すオーバーレイ */
     #deck-search-overlay {
       position: absolute;
       bottom: 0;
@@ -376,6 +376,8 @@
     }
 
     #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    /* 修正要件：獲得ライフ一覧トレイ。墓地一覧と縦のスペースを分け合う */
+    #life-gain-tray { border: 0.2vh solid #38bdf8; flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
     /* 修正要件：カード固定枠のマスのサイズを横幅30vw、縦幅30vhに修正 */
     .lock-slot-container {
@@ -422,7 +424,7 @@
     .two-player-mode .card-rot-p2 { transform: rotate(180deg); }
     .two-player-mode .card-rot-p2.card-tapped { transform: rotate(270deg); }
     /* 修正要件：2人モードはP1vP2の対戦カードのみ意味を持つため、
-       他プレイヤー(P3)が絡む棒(top・right-p1)とそのラベルは非表示にする */
+       他プレイヤー(P3)が絡むウォール(top・right-p1)とそのラベルは非表示にする */
     .two-player-mode #track-top,
     .two-player-mode #track-right-p1,
     .two-player-mode #matchup-top,
@@ -448,7 +450,7 @@
       border: 0.2vh solid #fff; border-radius: 0.6vh; cursor: pointer;
       transition: left 0.2s ease, top 0.2s ease; z-index: 25;
       box-shadow: 0 0 1.2vh rgba(245, 158, 11, 0.8);
-      /* 修正要件：ハンドルが棒の点(ノード)の上に重なるとクリックを奪ってしまうため、
+      /* 修正要件：ハンドルがウォールの点(ノード)の上に重なるとクリックを奪ってしまうため、
          ハンドル自体はクリック judgment の対象から外す(段階の変更は必ず点をクリックして行う) */
       pointer-events: none;
     }
@@ -464,7 +466,7 @@
     #track-right-p1 { bottom: 1vh; right: 20%; transform-origin: center center; transform: rotate(15deg); }
     .bar-flip { transform: rotate(180deg); }
 
-    /* 修正要件：棒が示す対戦カード(有利/不利)のラベル */
+    /* 修正要件：ウォールが示す対戦カード(有利/不利)のラベル */
     .bar-matchup-label {
       position: absolute; font-size: 0.85vh; color: #cbd5e1; font-weight: bold;
       background: rgba(15, 23, 42, 0.8); padding: 0.15vh 0.4vw; border-radius: 0.4vh;
@@ -474,13 +476,13 @@
     #matchup-left-p1 { bottom: 0.2vh; left: 6%; }
     #matchup-right-p1 { bottom: 0.2vh; right: 6%; }
 
-    /* 修正要件：棒のグラデーションを廃止し、分かりやすい単色に統一 */
+    /* 修正要件：ウォールのグラデーションを廃止し、分かりやすい単色に統一 */
     #track-left-p1 .bar-track-line,
     #track-right-p1 .bar-track-line,
     #track-top .bar-track-line { background: #475569; }
 
-    /* 修正要件：2人モードでは唯一意味のある棒(旧左の棒)をまっすぐ縦向きにして右側へ移動し、
-       左側には新しく8段階の少し長い棒を設置する
+    /* 修正要件：2人モードでは唯一意味のあるウォール(旧左のウォール)をまっすぐ縦向きにして右側へ移動し、
+       左側には新しく8段階の少し長いウォールを設置する
        (実際の向き・位置の上書きはadjustPerspectiveBarLayout内でインラインstyleとして設定する。
         adjustPerspectiveBarLayoutが視点ごとにインラインstyleを設定するため、
         CSSだけでは優先度で負けてしまうため) */
@@ -488,7 +490,7 @@
     .two-player-mode .bar-secondary-2p {
       display: flex; bottom: 1vh; left: 14%;
       transform: none;
-      height: 32vh; /* 修正要件：右の棒(26vh)より少し長めにし、共有プレイエリア中央あたりまで届かせる */
+      height: 32vh; /* 修正要件：右のウォール(26vh)より少し長めにし、共有プレイエリア中央あたりまで届かせる */
     }
 
     /* 修正要件：カード固定枠をプレイヤー識別色に（P1=赤/P2=水色/P3=緑）。ターン中は従来通り赤枠が優先される */
