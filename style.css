@@ -325,6 +325,18 @@
     #end-turn-btn { width: 100%; margin-top: 0.4vh; background: #ef4444; font-weight: bold; opacity: 0.4; }
     #end-turn-btn:not(:disabled):hover { background: #f87171; }
 
+    /* 修正要件：墓地送り/獲得ライフ追加/デッキ戻しのモード中であることを、
+       ターン終了ボタンの下に大きく表示する */
+    #action-mode-display {
+      display: none; width: 100%; margin-top: 0.6vh; padding: 1.2vh 0.4vw;
+      border-radius: 0.6vh; text-align: center; font-size: 1.5vh; font-weight: bold;
+      line-height: 1.5; border: 0.2vh solid; box-shadow: 0 0.3vh 0.8vh rgba(0,0,0,0.5);
+    }
+    #action-mode-display .action-mode-hint { display: block; font-size: 1.1vh; font-weight: normal; margin-top: 0.4vh; opacity: 0.85; }
+    #action-mode-display.mode-graveyard { background: rgba(46, 16, 101, 0.95); color: #ddd6fe; border-color: #8b5cf6; }
+    #action-mode-display.mode-lifegain { background: rgba(3, 105, 161, 0.95); color: #e0f2fe; border-color: #38bdf8; }
+    #action-mode-display.mode-deckreturn { background: rgba(44, 18, 21, 0.95); color: #fca5a5; border-color: #ef4444; }
+
     /* 手札エリア */
     #bottom-hand-panel { height: 16vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.4vh 0.6vh; display: flex; flex-direction: column; position: relative; }
     #hand-cards { display: flex; gap: 0.5vw; overflow-x: auto; flex: 1; align-items: center; padding-top: 0.2vh; }
@@ -595,16 +607,6 @@
     .restart-blaze-btn:hover { background: #ef4444; }
     .restart-phantom-btn { background: #7c3aed; }
     .restart-phantom-btn:hover { background: #8b5cf6; }
-
-    /* 修正要件：墓地送り/獲得ライフ追加/デッキ戻しのモード中であることを示す画面上部の帯 */
-    #action-mode-banner {
-      position: absolute; top: 0; left: 0; width: 100%; text-align: center;
-      padding: 0.7vh 1vw; font-size: 1.7vh; font-weight: bold; letter-spacing: 0.05vw;
-      z-index: 8000; display: none; box-shadow: 0 0.3vh 0.8vh rgba(0,0,0,0.6);
-    }
-    #action-mode-banner.mode-graveyard { background: rgba(46, 16, 101, 0.95); color: #ddd6fe; border-bottom: 0.25vh solid #8b5cf6; }
-    #action-mode-banner.mode-lifegain { background: rgba(3, 105, 161, 0.95); color: #e0f2fe; border-bottom: 0.25vh solid #38bdf8; }
-    #action-mode-banner.mode-deckreturn { background: rgba(44, 18, 21, 0.95); color: #fca5a5; border-bottom: 0.25vh solid #ef4444; }
 
     /* 修正要件：接続状態バナー */
     #conn-status-banner {
