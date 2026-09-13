@@ -51,6 +51,35 @@
     peer.on('open', (id) => {
       myId = id;
       document.getElementById('my-peer-id').innerText = id;
+      // 修正要件：シグナリングサーバーへの登録が(再)完了したので再接続試行回数をリセット
+      peerReconnectAttempts = 0;
+      if (everConnectedToBroker) {
+        hideConnBanner();
+      }
+      everConnectedToBroker = true;
+    });
+
+    // 修正要件：原因調査の結果、WebRTCのP2Pデータ接続自体は生きていても、
+    // ブラウザのスリープ復帰・タブのバックグラウンド化・Wi-Fi切り替えなど「大きな通信障害」とは
+    // 言えない軽微な要因でシグナリングサーバーとの接続(disconnected)だけが切れることが頻発していた。
+    // これを放置すると、以後どちらの端末も新規/再接続ができなくなり、
+    // 「特に問題は無いはずなのに接続が切れたまま戻らない」という症状になっていた。
+    // disconnectedを検知して自動的にpeer.reconnect()することで、多くのケースはユーザー操作なしで復帰する。
+    let peerReconnectAttempts = 0;
+    let everConnectedToBroker = false;
+    const MAX_PEER_RECONNECT_ATTEMPTS = 10;
+    peer.on('disconnected', () => {
+      if (peer.destroyed) return;
+      if (peerReconnectAttempts >= MAX_PEER_RECONNECT_ATTEMPTS) {
+        setConnBanner('サーバーとの接続が回復しませんでした。ページを再読み込みしてください。', 'bad');
+        return;
+      }
+      peerReconnectAttempts++;
+      setConnBanner('サーバーとの接続が切れました。自動的に再接続しています…', 'bad');
+      const delay = Math.min(1000 * peerReconnectAttempts, 5000);
+      setTimeout(() => {
+        if (!peer.destroyed) peer.reconnect();
+      }, delay);
     });
 
     peer.on('error', (err) => {
@@ -268,6 +297,8 @@
       document.getElementById('battle-view').style.display = 'flex';
       document.getElementById('header-bar').style.display = 'none';
       document.getElementById('battle-view').classList.toggle('two-player-mode', playerCount === 2);
+      // 修正要件：墓地一覧/獲得ライフ一覧の表示を「墓地一覧」から開始する(2人/3人共通)
+      switchSideTrayView('graveyard');
       currentPhase = 'battle';
       createAllLockSlots();
       adjustPerspectiveBarLayout();
@@ -337,6 +368,12 @@
       const delay = Math.min(1500 * reconnectAttempts, 8000);
       reconnectTimer = setTimeout(() => {
         if (isHost || !peer || peer.destroyed) return;
+        // 修正要件：シグナリングサーバーからdisconnected状態のままだとpeer.connect()が
+        // 成立せず、以後close/errorも発火せずに再接続が止まってしまうことがあったため、
+        // その場合は先にpeer自体を復帰させてから接続し直す
+        if (peer.disconnected) {
+          peer.reconnect();
+        }
         hostConn = peer.connect(lastKnownHostId);
         attachHostConnHandlers();
       }, delay);
@@ -495,10 +532,21 @@
       } catch (e) { /* 保存できなくても致命的ではないため無視 */ }
     }
 
+    let heartbeatTimer = null;
     function startAutoSaveLoop() {
       clearInterval(autoSaveTimer);
       autoSaveTimer = setInterval(saveSession, 5000);
       window.addEventListener('beforeunload', saveSession);
+
+      // 修正要件：原因調査の結果、対戦中に数分間データのやり取りが無い(相手の長考ターン等)と、
+      // NATやファイアウォールがP2P通信経路を使われていないと判断してタイムアウトで切ってしまい、
+      // 大きな通信障害が無くても「接続が切れる」ことがあった。定期的に極小のデータを送り合うことで
+      // 経路を維持し、この種の切断を防ぐ
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = setInterval(() => {
+        if (!myId) return;
+        broadcast({ type: 'PING', payload: {} });
+      }, 20000);
     }
 
     /* ドラフト関連データ */
@@ -906,7 +954,7 @@
         // 修正要件：対戦開始時に先行プレイヤーを決定し、ウォールの位置を自動調整する（ホストのみが決定し全員に配信）
         // 3人モード：先行は2番手・3番手それぞれに微不利、2番手は3番手に微不利
         // 2人モード：先行の視点で左の8段階ウォールは下から4段階目、右の4段階ウォールは下から2段階目に自動移動
-        // (段階1=有利/+2, 2=微有利/+1, 3=微不利/-1, 4=不利/-2 の対応。8段階ウォールは1=最も相手に有利,8=最も自分に有利)
+        // (段階1=有利/+2, 2=微有利/+1, 3=微不利/-1, 4=不利/-2 の対応。8段階ウォールは1=最も自分に有利,8=最も相手に有利)
         if (isHost) {
           const first = Math.floor(Math.random() * playerCount);
           if (playerCount === 2) {
@@ -1177,6 +1225,10 @@
           break;
         case 'RESTART_GAME':
           performGameReset();
+          break;
+        // 修正要件：NAT/ファイアウォールの通信経路タイムアウトによる意図しない切断を防ぐための
+        // 定期キープアライブ。受信しても何もしない（相手に届くこと自体に意味がある）
+        case 'PING':
           break;
       }
     }
@@ -2085,6 +2137,8 @@
       document.getElementById('header-bar').style.display = 'none';
       // 修正要件：2人モードではP2を正面向きに、P3関連の表示を消すためのクラス切り替え
       document.getElementById('battle-view').classList.toggle('two-player-mode', playerCount === 2);
+      // 修正要件：墓地一覧/獲得ライフ一覧の表示を「墓地一覧」から開始する(2人/3人共通)
+      switchSideTrayView('graveyard');
 
       document.getElementById('hand-cards').innerHTML = '';
 
@@ -2360,70 +2414,19 @@
         window.removeEventListener('mouseup', onMouseUp);
         ghost.remove();
 
-        if (!moved) return; // 単なるクリックは何もせず手札に留まる
+        if (!moved) {
+          // 修正要件：墓地送り/獲得ライフ追加/デッキ戻しのモードが有効な場合、
+          // クリックした手札カードに対してそのモードの操作を行う
+          if (actionMode) {
+            handleCardActionModeClick({ source: 'hand', card, wrapperEl });
+          }
+          return; // 単なるクリックは手札に留まる（モードが無ければ何もしない）
+        }
 
         const inRect = (r) => r && me.clientX >= r.left && me.clientX <= r.right && me.clientY >= r.top && me.clientY <= r.bottom;
 
         const handPanel = document.getElementById('bottom-hand-panel').getBoundingClientRect();
         if (inRect(handPanel)) return; // 手札内に戻しただけ
-
-        const scoreZone = document.getElementById('score-add-zone').getBoundingClientRect();
-        const returnTopZoneEl = document.getElementById('deck-return-top-zone');
-        const returnTopZone = returnTopZoneEl ? returnTopZoneEl.getBoundingClientRect() : null;
-        const returnZone = document.getElementById('deck-return-zone').getBoundingClientRect();
-        const returnBottomZone = document.getElementById('deck-bottom-zone').getBoundingClientRect();
-        const gyZone = document.getElementById('graveyard-zone').getBoundingClientRect();
-
-        if (inRect(scoreZone) && turnPlayerIndex === myPlayerIndex) {
-          if (wrapperEl) wrapperEl.remove();
-          playerStates[myPlayerIndex].lifeScore += 1;
-          // 修正要件：獲得ライフに加えたカードの実体も保存し、墓地と同様に一覧確認できるようにする
-          lifeGains[myPlayerIndex].push(card);
-          broadcastPlayerState();
-          broadcastLifeGain(myPlayerIndex);
-          broadcastLog(`${myDisplayName()}が獲得ライフに追加しました`);
-          checkWinCondition();
-          // 修正要件：獲得ライフに加えた操作も一手戻せるようにする
-          recordUndo('獲得ライフに追加', () => {
-            playerStates[myPlayerIndex].lifeScore -= 1;
-            const idx = lifeGains[myPlayerIndex].indexOf(card);
-            if (idx !== -1) lifeGains[myPlayerIndex].splice(idx, 1);
-            broadcastPlayerState();
-            broadcastLifeGain(myPlayerIndex);
-            addCardToHand(card);
-          });
-          return;
-        }
-        if (inRect(returnTopZone)) {
-          if (wrapperEl) wrapperEl.remove();
-          deckCards.push(card);
-          updateDeckStatus();
-          broadcastLog(`${myDisplayName()}がカードをデッキの一番上に戻しました`);
-          return;
-        }
-        if (inRect(returnZone)) {
-          if (wrapperEl) wrapperEl.remove();
-          deckCards.push(card);
-          shuffle(deckCards);
-          updateDeckStatus();
-          broadcastLog(`${myDisplayName()}がカードをデッキに戻しました`);
-          return;
-        }
-        if (inRect(returnBottomZone)) {
-          if (wrapperEl) wrapperEl.remove();
-          deckCards.unshift(card);
-          updateDeckStatus();
-          broadcastLog(`${myDisplayName()}がカードをデッキの一番下に戻しました`);
-          return;
-        }
-        if (inRect(gyZone)) {
-          if (wrapperEl) wrapperEl.remove();
-          graveyards[myPlayerIndex].push(card);
-          broadcastGraveyard(myPlayerIndex);
-          broadcastPlayerState();
-          broadcastLog(`${myDisplayName()}がカードを墓地へ送りました`);
-          return;
-        }
 
         const tableRect = table.getBoundingClientRect();
         const insideTable = me.clientX >= tableRect.left && me.clientX <= tableRect.right && me.clientY >= tableRect.top && me.clientY <= tableRect.bottom;
@@ -2625,7 +2628,25 @@
           const dragDuration = Date.now() - clickStartTime;
           const moveDist = Math.hypot(me.clientX - startX, me.clientY - startY);
 
+          // 修正要件：Undo用に、ドロップ処理でカードが場から取り除かれる前の状態を記録
+          // (アクションモードのクリック処理でも使うため、クリック判定より前に定義する)
+          const captureSnap = () => ({
+            card: cardEl.cardDataObj,
+            ownerIndex: parseInt(cardEl.getAttribute('data-owner')),
+            faceDown: cardEl.getAttribute('data-facedown') === 'true',
+            tapped: cardEl.getAttribute('data-tapped') === 'true',
+            x: origX, y: origY,
+            slotOwnerIndex: origSlotOwner, slotIndex: origSlotIdx
+          });
+
           if (dragDuration < 200 && moveDist < 5) {
+            // 修正要件：墓地送り/獲得ライフ追加/デッキ戻しのモードが有効な場合、
+            // クリックしたカードに対してそのモードの操作を行う（表返し/タップ操作より優先）
+            if (actionMode) {
+              handleCardActionModeClick({ source: 'board', card: cardEl.cardDataObj, cardElId: cardEl.id, snap: captureSnap() });
+              return;
+            }
+
             const isFaceDown = cardEl.getAttribute('data-facedown') === 'true';
             const ownerIdx = parseInt(cardEl.getAttribute('data-owner'));
             const inLockSlot = cardEl.getAttribute('data-slot-owner') !== '';
@@ -2657,16 +2678,6 @@
             return;
           }
 
-          // 修正要件：Undo用に、ドロップ処理でカードが場から取り除かれる前の状態を記録
-          const captureSnap = () => ({
-            card: cardEl.cardDataObj,
-            ownerIndex: parseInt(cardEl.getAttribute('data-owner')),
-            faceDown: cardEl.getAttribute('data-facedown') === 'true',
-            tapped: cardEl.getAttribute('data-tapped') === 'true',
-            x: origX, y: origY,
-            slotOwnerIndex: origSlotOwner, slotIndex: origSlotIdx
-          });
-
           const handPanel = document.getElementById('bottom-hand-panel').getBoundingClientRect();
           if (me.clientX >= handPanel.left && me.clientX <= handPanel.right && me.clientY >= handPanel.top && me.clientY <= handPanel.bottom) {
             const snap = captureSnap();
@@ -2680,99 +2691,9 @@
             return;
           }
 
-          const scoreZone = document.getElementById('score-add-zone').getBoundingClientRect();
-          const returnZone = document.getElementById('deck-return-zone').getBoundingClientRect();
-          const returnTopZoneEl = document.getElementById('deck-return-top-zone');
-          const returnTopZone = returnTopZoneEl ? returnTopZoneEl.getBoundingClientRect() : null;
-          const returnBottomZone = document.getElementById('deck-bottom-zone').getBoundingClientRect();
-          const gyZone = document.getElementById('graveyard-zone').getBoundingClientRect();
-
-          if (me.clientX >= scoreZone.left && me.clientX <= scoreZone.right && me.clientY >= scoreZone.top && me.clientY <= scoreZone.bottom && turnPlayerIndex === myPlayerIndex) {
-            const snap = captureSnap();
-            playerStates[myPlayerIndex].lifeScore += 1;
-            // 修正要件：獲得ライフに加えたカードの実体も保存し、墓地と同様に一覧確認できるようにする
-            lifeGains[myPlayerIndex].push(snap.card);
-            removeBoardCard(cardEl.id);
-            broadcastPlayerState();
-            broadcastLifeGain(myPlayerIndex);
-            broadcastLog(`${myDisplayName()}が獲得ライフに追加しました`);
-            recordUndo('獲得ライフに追加', () => {
-              playerStates[myPlayerIndex].lifeScore -= 1;
-              const idx = lifeGains[myPlayerIndex].indexOf(snap.card);
-              if (idx !== -1) lifeGains[myPlayerIndex].splice(idx, 1);
-              restoreCardToBoard(snap);
-              broadcastPlayerState();
-              broadcastLifeGain(myPlayerIndex);
-            });
-            checkWinCondition();
-            return;
-          }
-
-          if (me.clientX >= returnZone.left && me.clientX <= returnZone.right && me.clientY >= returnZone.top && me.clientY <= returnZone.bottom) {
-            const snap = captureSnap();
-            deckCards.push(cardEl.cardDataObj);
-            shuffle(deckCards);
-            removeBoardCard(cardEl.id);
-            updateDeckStatus();
-            broadcastLog(`${myDisplayName()}がカードをデッキに戻しました`);
-            recordUndo('デッキに戻す', () => {
-              const idx = deckCards.indexOf(snap.card);
-              if (idx !== -1) deckCards.splice(idx, 1);
-              updateDeckStatus();
-              restoreCardToBoard(snap);
-            });
-            return;
-          }
-
-          if (returnTopZone && me.clientX >= returnTopZone.left && me.clientX <= returnTopZone.right && me.clientY >= returnTopZone.top && me.clientY <= returnTopZone.bottom) {
-            const snap = captureSnap();
-            deckCards.push(cardEl.cardDataObj);
-            removeBoardCard(cardEl.id);
-            updateDeckStatus();
-            broadcastLog(`${myDisplayName()}がカードをデッキの一番上に戻しました`);
-            recordUndo('デッキの一番上に戻す', () => {
-              const idx = deckCards.indexOf(snap.card);
-              if (idx !== -1) deckCards.splice(idx, 1);
-              updateDeckStatus();
-              restoreCardToBoard(snap);
-            });
-            return;
-          }
-
-          if (me.clientX >= returnBottomZone.left && me.clientX <= returnBottomZone.right && me.clientY >= returnBottomZone.top && me.clientY <= returnBottomZone.bottom) {
-            const snap = captureSnap();
-            deckCards.unshift(cardEl.cardDataObj);
-            removeBoardCard(cardEl.id);
-            updateDeckStatus();
-            broadcastLog(`${myDisplayName()}がカードをデッキの一番下に戻しました`);
-            recordUndo('デッキの一番下に戻す', () => {
-              const idx = deckCards.indexOf(snap.card);
-              if (idx !== -1) deckCards.splice(idx, 1);
-              updateDeckStatus();
-              restoreCardToBoard(snap);
-            });
-            return;
-          }
-
-          if (me.clientX >= gyZone.left && me.clientX <= gyZone.right && me.clientY >= gyZone.top && me.clientY <= gyZone.bottom) {
-            const snap = captureSnap();
-            graveyards[myPlayerIndex].push(cardEl.cardDataObj);
-            removeBoardCard(cardEl.id);
-            broadcastGraveyard(myPlayerIndex);
-            broadcastPlayerState();
-            broadcastLog(`${myDisplayName()}がカードを墓地へ送りました`);
-            recordUndo('墓地へ送る', () => {
-              const idx = graveyards[myPlayerIndex].indexOf(snap.card);
-              if (idx !== -1) graveyards[myPlayerIndex].splice(idx, 1);
-              broadcastGraveyard(myPlayerIndex);
-              broadcastPlayerState();
-              restoreCardToBoard(snap);
-            });
-            return;
-          }
-
-          /* 修正要件：手札・墓地・獲得ライフに追加・デッキに戻す・デッキの一番下に戻す以外の場所で、
-             かつ共有プレイエリア(zone-table)の外にドロップされた場合は元の位置に戻す */
+          /* 修正要件：手札に戻す以外の場所で、かつ共有プレイエリア(zone-table)の外に
+             ドロップされた場合は元の位置に戻す（墓地送り/獲得ライフ追加/デッキ戻しは
+             ボタン+クリック方式に変更したため、ドラッグ&ドロップでの判定は行わない） */
           const tableRectNow = document.getElementById('zone-table').getBoundingClientRect();
           const insideSharedArea = me.clientX >= tableRectNow.left && me.clientX <= tableRectNow.right && me.clientY >= tableRectNow.top && me.clientY <= tableRectNow.bottom;
 
@@ -2988,10 +2909,12 @@
         // 修正要件：2人モードは対戦相手が1人だけのため、左右どちらのライフデッキが尽きても
         // 唯一の対戦相手との対戦カードを有利にする（3人モードは従来通り左右で相手を分ける）。
         // また2人モードで有利不利を表すのは4段階ウォールではなく8段階ウォールのため、
-        // そちらを自分に最も有利な端(stage8)まで移動させる（従来は誤って4段階ウォールが動いていた）
+        // そちらを自分に最も有利な端まで移動させる（従来は誤って4段階ウォールが動いていた）。
+        // 修正要件：実際の動作確認の結果、8段階ウォールは「自分に最も有利」がstage1側だったため、
+        // stage8ではなくstage1を指定するよう修正（前回の修正では移動方向が逆になっていた）
         if (playerCount === 2) {
           const opponent = (myPlayerIndex + 1) % 2;
-          setSecondaryPairFavor(myPlayerIndex, opponent, 8);
+          setSecondaryPairFavor(myPlayerIndex, opponent, 1);
           broadcast({ type: 'SYNC_SECONDARY_BAR', payload: { stage: secondaryPairStage } });
           renderSecondaryBarForMe();
         } else {
@@ -3036,6 +2959,157 @@
 
       broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
       syncBoardCardLocal(cardData);
+    }
+
+    /* 修正要件：墓地送り/獲得ライフ追加/デッキ戻しを、カードを重ねる(ドラッグ&ドロップ)方式から
+       「ボタンを押してモードに入り、対象カードをクリックする」方式に変更する。
+       もう一度同じボタンを押すとモードが終了する */
+    let actionMode = null; // null | 'graveyard' | 'lifegain' | 'deckreturn'
+
+    function toggleActionMode(mode) {
+      actionMode = (actionMode === mode) ? null : mode;
+      updateActionModeUI();
+    }
+
+    function updateActionModeUI() {
+      const zoneIds = { graveyard: 'graveyard-zone', lifegain: 'score-add-zone', deckreturn: 'deck-return-zone' };
+      Object.keys(zoneIds).forEach(key => {
+        const el = document.getElementById(zoneIds[key]);
+        if (el) el.classList.toggle('action-mode-active', actionMode === key);
+      });
+    }
+
+    // 修正要件：手札・場のカードどちらをクリックした場合も共通で処理する
+    // payload: { source: 'hand'|'board', card, wrapperEl?(hand用), cardElId?(board用), snap?(board用undo/戻す用) }
+    function handleCardActionModeClick(payload) {
+      if (!actionMode) return;
+      const { source, card } = payload;
+
+      if (actionMode === 'deckreturn') {
+        openDeckReturnChoice(payload);
+        return;
+      }
+
+      if (actionMode === 'lifegain' && turnPlayerIndex !== myPlayerIndex) {
+        alert('自分のターン中のみ獲得ライフに追加できます');
+        return;
+      }
+
+      const removeFromSource = () => {
+        if (source === 'hand') {
+          if (payload.wrapperEl) payload.wrapperEl.remove();
+        } else {
+          removeBoardCard(payload.cardElId);
+        }
+      };
+      const restoreToSource = () => {
+        if (source === 'hand') addCardToHand(card);
+        else restoreCardToBoard(payload.snap);
+      };
+
+      if (actionMode === 'graveyard') {
+        removeFromSource();
+        graveyards[myPlayerIndex].push(card);
+        broadcastGraveyard(myPlayerIndex);
+        broadcastPlayerState();
+        broadcastLog(`${myDisplayName()}がカードを墓地へ送りました`);
+        recordUndo('墓地へ送る', () => {
+          const idx = graveyards[myPlayerIndex].indexOf(card);
+          if (idx !== -1) graveyards[myPlayerIndex].splice(idx, 1);
+          broadcastGraveyard(myPlayerIndex);
+          broadcastPlayerState();
+          restoreToSource();
+        });
+      } else if (actionMode === 'lifegain') {
+        removeFromSource();
+        playerStates[myPlayerIndex].lifeScore += 1;
+        lifeGains[myPlayerIndex].push(card);
+        broadcastPlayerState();
+        broadcastLifeGain(myPlayerIndex);
+        broadcastLog(`${myDisplayName()}が獲得ライフに追加しました`);
+        checkWinCondition();
+        recordUndo('獲得ライフに追加', () => {
+          playerStates[myPlayerIndex].lifeScore -= 1;
+          const idx = lifeGains[myPlayerIndex].indexOf(card);
+          if (idx !== -1) lifeGains[myPlayerIndex].splice(idx, 1);
+          broadcastPlayerState();
+          broadcastLifeGain(myPlayerIndex);
+          restoreToSource();
+        });
+      }
+    }
+
+    /* 修正要件：デッキに戻す際、一番上/一番下/シャッフルして戻す を選ぶポップアップ */
+    let pendingDeckReturnPayload = null;
+
+    function openDeckReturnChoice(payload) {
+      pendingDeckReturnPayload = payload;
+      const modal = document.getElementById('deck-return-choice-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function cancelDeckReturnChoice() {
+      pendingDeckReturnPayload = null;
+      const modal = document.getElementById('deck-return-choice-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function confirmDeckReturnChoice(choice) {
+      const payload = pendingDeckReturnPayload;
+      if (!payload) return;
+      pendingDeckReturnPayload = null;
+      const modal = document.getElementById('deck-return-choice-modal');
+      if (modal) modal.style.display = 'none';
+
+      const { source, card } = payload;
+      const removeFromSource = () => {
+        if (source === 'hand') {
+          if (payload.wrapperEl) payload.wrapperEl.remove();
+        } else {
+          removeBoardCard(payload.cardElId);
+        }
+      };
+      const restoreToSource = () => {
+        if (source === 'hand') addCardToHand(card);
+        else restoreCardToBoard(payload.snap);
+      };
+
+      removeFromSource();
+
+      let logSuffix, undoRestore;
+      if (choice === 'top') {
+        deckCards.push(card);
+        logSuffix = 'デッキの一番上に戻しました';
+        undoRestore = () => {
+          const idx = deckCards.indexOf(card);
+          if (idx !== -1) deckCards.splice(idx, 1);
+          updateDeckStatus();
+          restoreToSource();
+        };
+      } else if (choice === 'bottom') {
+        deckCards.unshift(card);
+        logSuffix = 'デッキの一番下に戻しました';
+        undoRestore = () => {
+          const idx = deckCards.indexOf(card);
+          if (idx !== -1) deckCards.splice(idx, 1);
+          updateDeckStatus();
+          restoreToSource();
+        };
+      } else {
+        deckCards.push(card);
+        shuffle(deckCards);
+        logSuffix = 'デッキに戻しシャッフルしました';
+        undoRestore = () => {
+          const idx = deckCards.indexOf(card);
+          if (idx !== -1) deckCards.splice(idx, 1);
+          updateDeckStatus();
+          restoreToSource();
+        };
+      }
+
+      updateDeckStatus();
+      broadcastLog(`${myDisplayName()}がカードを${logSuffix}`);
+      recordUndo('デッキに戻す', undoRestore);
     }
 
     function broadcastGraveyard(pIdx) {
@@ -3103,6 +3177,20 @@
         const cardEl = createCardElement(card, null, 'lifegain', false);
         container.appendChild(cardEl);
       });
+    }
+
+    // 修正要件：2人モードでは右側の墓地一覧/獲得ライフ一覧を1つの枠にまとめ、ボタンで切り替える
+    function switchSideTrayView(which) {
+      const gyTray = document.getElementById('graveyard-tray');
+      const lgTray = document.getElementById('life-gain-tray');
+      const btnGy = document.getElementById('side-tray-btn-graveyard');
+      const btnLg = document.getElementById('side-tray-btn-lifegain');
+      if (!gyTray || !lgTray) return;
+      const showGy = (which !== 'lifegain');
+      gyTray.style.display = showGy ? 'flex' : 'none';
+      lgTray.style.display = showGy ? 'none' : 'flex';
+      if (btnGy) btnGy.style.background = showGy ? '#4f46e5' : '#334155';
+      if (btnLg) btnLg.style.background = showGy ? '#334155' : '#4f46e5';
     }
 
     /* 修正要件：デッキ内検索画面を手札・カラーエリアを覆うオーバーレイに変更 */
