@@ -196,11 +196,10 @@
             </div>
           </div>
 
-          <div class="left-action-zone" id="score-add-zone"><b>★獲得ライフに追加</b></div>
-          <div class="left-action-zone" id="deck-return-zone"><b>デッキに戻す</b></div>
-          <div class="left-action-zone" id="deck-return-top-zone"><b>デッキの上に戻す</b></div>
-          <div class="left-action-zone" id="deck-bottom-zone"><b>デッキ一番下に戻す</b></div>
-          <div class="left-action-zone" id="graveyard-zone"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
+          <!-- 修正要件：カードを重ねる(ドラッグ&ドロップ)方式から、ボタンでモードに入りカードをクリックする方式に変更 -->
+          <div class="left-action-zone" id="score-add-zone" onclick="toggleActionMode('lifegain')"><b>★獲得ライフに追加</b></div>
+          <div class="left-action-zone" id="deck-return-zone" onclick="toggleActionMode('deckreturn')"><b>デッキに戻す</b></div>
+          <div class="left-action-zone" id="graveyard-zone" onclick="toggleActionMode('graveyard')"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
           <!-- 修正要件：フェイズ概念を廃止し、通常の横書きターン終了ボタンに戻す -->
           <button class="game-btn" id="end-turn-btn" onclick="endTurn()" disabled>ターン終了</button>
         </div>
@@ -312,6 +311,13 @@
     </div>
 
     <div id="side-container">
+      <!-- 修正要件：右側のスペースの都合上、墓地一覧と獲得ライフ一覧をボタンで切り替える
+           1つの表示にまとめる（2人/3人モード共通） -->
+      <div id="side-tray-switch">
+        <button class="game-btn" onclick="switchSideTrayView('graveyard')" id="side-tray-btn-graveyard" style="flex:1; font-size:1.1vh; background:#4f46e5;">墓地一覧</button>
+        <button class="game-btn" onclick="switchSideTrayView('lifegain')" id="side-tray-btn-lifegain" style="flex:1; font-size:1.1vh; background:#334155;">獲得ライフ一覧</button>
+      </div>
+
       <div id="graveyard-tray" class="tray-panel">
         <div style="font-size:1.3vh; color:#a78bfa; margin-bottom:0.4vh; text-align:center; font-weight:bold;">墓地一覧</div>
         <div style="display:flex; flex-direction:column; gap:0.3vh; margin-bottom:0.6vh;">
@@ -367,6 +373,17 @@
       <div id="mulligan-title">マリガン（デッキに戻すカードをクリックして選択、最大5枚）</div>
       <div id="mulligan-cards"></div>
       <button id="mulligan-confirm-btn" class="game-btn" onclick="confirmMulligan()">決定（0枚をデッキに戻す）</button>
+    </div>
+
+    <!-- 修正要件：デッキに戻すモードでカードをクリックした際、戻し先(上/下/シャッフル)を選ぶポップアップ -->
+    <div id="deck-return-choice-modal">
+      <div class="deck-return-choice-box">
+        <div class="deck-return-choice-title">デッキへの戻し方を選んでください</div>
+        <button class="game-btn" onclick="confirmDeckReturnChoice('top')">一番上に戻す</button>
+        <button class="game-btn" onclick="confirmDeckReturnChoice('bottom')">一番下に戻す</button>
+        <button class="game-btn" onclick="confirmDeckReturnChoice('shuffle')">シャッフルして戻す</button>
+        <button class="game-btn deck-return-choice-cancel" onclick="cancelDeckReturnChoice()">キャンセル</button>
+      </div>
     </div>
 
     <!-- 修正要件：獲得ライフ12到達での勝敗表示（クリックで閉じる） -->
