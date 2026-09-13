@@ -173,7 +173,7 @@
           </div>
           
           <div class="zone">
-            <div class="zone-title">マナ生成</div>
+            <div class="zone-title">カラー生成</div>
             <div style="display:flex; gap:0.2vw; justify-content:center; margin-top:0.2vh;">
               <button class="mana-btn" style="background:#ef4444;" onclick="spawnMana('red')">赤</button>
               <button class="mana-btn" style="background:#eab308; color:#000;" onclick="spawnMana('yellow')">黄</button>
@@ -224,7 +224,7 @@
             <div id="p2-lock-zone" class="lock-slot-container"></div>
             <div id="p3-lock-zone" class="lock-slot-container"></div>
 
-            <!-- 上部の棒 -->
+            <!-- 上部のウォール -->
             <div id="track-top" class="bar-track-container">
               <div class="bar-track-line">
                 <div class="bar-node" onclick="setBarStage('top', 1)"></div>
@@ -234,10 +234,10 @@
                 <div id="handle-top" class="movable-bar-handle"></div>
               </div>
             </div>
-            <!-- 修正要件：棒が示す有利不利の対戦カードを表示するラベル -->
+            <!-- 修正要件：ウォールが示す有利不利の対戦カードを表示するラベル -->
             <div id="matchup-top" class="bar-matchup-label"></div>
 
-            <!-- 左側の棒（修正要件：点に番号付与。上から+2,+1,-1,-2＝下から-2,-1,+1,+2） -->
+            <!-- 左側のウォール（修正要件：点に番号付与。上から+2,+1,-1,-2＝下から-2,-1,+1,+2） -->
             <div id="track-left-p1" class="bar-track-container bar-vertical">
               <div class="bar-track-line">
                 <div class="bar-node" onclick="setBarStage('left-p1', 1)"></div>
@@ -249,7 +249,7 @@
             </div>
             <div id="matchup-left-p1" class="bar-matchup-label"></div>
 
-            <!-- 右側の棒（修正要件：点に番号付与。上から+2,+1,-1,-2＝下から-2,-1,+1,+2） -->
+            <!-- 右側のウォール（修正要件：点に番号付与。上から+2,+1,-1,-2＝下から-2,-1,+1,+2） -->
             <div id="track-right-p1" class="bar-track-container bar-vertical">
               <div class="bar-track-line">
                 <div class="bar-node" onclick="setBarStage('right-p1', 1)"></div>
@@ -261,7 +261,7 @@
             </div>
             <div id="matchup-right-p1" class="bar-matchup-label"></div>
 
-            <!-- 修正要件：2人モード専用。左側に新設する8段階の棒（少し長め） -->
+            <!-- 修正要件：2人モード専用。左側に新設する8段階のウォール（少し長め） -->
             <div id="track-secondary-2p" class="bar-track-container bar-vertical bar-secondary-2p">
               <div class="bar-track-line">
                 <div class="bar-node" onclick="setSecondaryBarStage(1)"></div>
@@ -284,8 +284,8 @@
           </div>
           
           <div class="zone" id="mana-zone">
-            <div class="zone-title" style="margin-right:1vw;">自分のマナゾーン<br><small>(枠外ドラッグで削除)</small></div>
-            <button class="btn-untap-all" id="untap-all-btn" onclick="untapAllMana()">すべてのマナを<br>起こす</button>
+            <div class="zone-title" style="margin-right:1vw;">自分のカラーゾーン<br><small>(枠外ドラッグで削除)</small></div>
+            <button class="btn-untap-all" id="untap-all-btn" onclick="untapAllMana()">すべてのカラーを<br>起こす</button>
             <!-- 修正要件：トリニティチャージ中に表示する中止/決定ボタン -->
             <button class="btn-untap-all" id="trinity-charge-cancel-btn" onclick="cancelTrinityCharge()" style="display:none; background:#7f1d1d; border-color:#ef4444;">中止</button>
             <button class="btn-untap-all" id="trinity-charge-confirm-btn" onclick="confirmTrinityCharge()" style="display:none; background:#166534; border-color:#22c55e;">決定</button>
@@ -293,7 +293,7 @@
         </div>
       </div>
 
-      <!-- 修正要件：トリニティチャージ中、マナゾーン以外を暗転させるオーバーレイ -->
+      <!-- 修正要件：トリニティチャージ中、カラーゾーン以外を暗転させるオーバーレイ -->
       <div id="trinity-charge-dim" style="display:none;"></div>
 
       <div id="bottom-hand-panel">
@@ -301,7 +301,7 @@
         <div id="hand-cards"></div>
       </div>
 
-      <!-- 修正要件：手札エリアとマナエリアを覆い隠す一時的なデッキ内検索画面 -->
+      <!-- 修正要件：手札エリアとカラーエリアを覆い隠す一時的なデッキ内検索画面 -->
       <div id="deck-search-overlay">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4vh;">
           <span style="font-size:1.3vh; color:#38bdf8; font-weight:bold;">デッキ内検索 (ランダム表示) - ドラッグで場へ出せます</span>
@@ -320,6 +320,17 @@
           <button class="game-btn" onclick="switchGyTab(2)" id="gy-tab-p2" style="width:100%; font-size:1.2vh; background:#334155;">P3</button>
         </div>
         <div id="graveyard-list" class="tray-list"></div>
+      </div>
+
+      <!-- 修正要件：獲得ライフのカードも墓地と同様に全員が画像で一覧確認できるようにする -->
+      <div id="life-gain-tray" class="tray-panel">
+        <div style="font-size:1.3vh; color:#e0f2fe; margin-bottom:0.4vh; text-align:center; font-weight:bold;">獲得ライフ一覧</div>
+        <div style="display:flex; flex-direction:column; gap:0.3vh; margin-bottom:0.6vh;">
+          <button class="game-btn" onclick="switchLifeGainTab(0)" id="lg-tab-p0" style="width:100%; font-size:1.2vh; background:#4f46e5;">P1</button>
+          <button class="game-btn" onclick="switchLifeGainTab(1)" id="lg-tab-p1" style="width:100%; font-size:1.2vh; background:#334155;">P2</button>
+          <button class="game-btn" onclick="switchLifeGainTab(2)" id="lg-tab-p2" style="width:100%; font-size:1.2vh; background:#334155;">P3</button>
+        </div>
+        <div id="life-gain-list" class="tray-list"></div>
       </div>
 
       <div id="chat-tray" class="tray-panel">
