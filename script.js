@@ -1988,6 +1988,12 @@
       hideGameOverOverlay();
       const restartBox = document.getElementById('restart-buttons');
       if (restartBox) restartBox.style.display = 'none';
+      // 修正要件：再戦時に前回のモード状態が残らないようにリセットする
+      actionMode = null;
+      pendingDeckReturnPayload = null;
+      updateActionModeUI();
+      const deckReturnModal = document.getElementById('deck-return-choice-modal');
+      if (deckReturnModal) deckReturnModal.style.display = 'none';
 
       document.querySelectorAll('.placed-card').forEach(el => el.remove());
       const handContainer = document.getElementById('hand-cards');
@@ -2128,6 +2134,40 @@
         x: slotCenterX - (cardWidth / 2) - offset,
         y: slotCenterY - (cardHeight / 2) - offset
       };
+    }
+
+    // 修正要件：カード固定枠の同じマスに複数枚重ねた際、カードIDの昇順で重なり順(斜めオフセット)を
+    // 決めているが、後から置かれたカードのIDが既存カードより先の順番になった場合、既存カード側の
+    // オフセットが更新されず新しいカードと完全に重なって見える(ズレが無い)バグがあった。
+    // そのマスへのカードの出入り・移動のたびに、そのマス内の「全カード」の位置を現在の並び順で
+    // 計算し直すことで、常に正しい斜めオフセットになるようにする。
+    function repositionSlotStack(slotOwnerIndex, slotIndex) {
+      if (slotOwnerIndex === null || slotOwnerIndex === undefined) return;
+      if (slotIndex === null || slotIndex === undefined) return;
+
+      const table = document.getElementById('zone-table');
+      if (!table) return;
+      const tableRect = table.getBoundingClientRect();
+
+      const zoneInfo = getLockZoneElement(slotOwnerIndex);
+      if (!zoneInfo || !zoneInfo.element) return;
+      const targetSlot = zoneInfo.element.querySelectorAll('.lock-slot')[slotIndex];
+      if (!targetSlot) return;
+
+      const slotRect = targetSlot.getBoundingClientRect();
+      const slotCenterX = slotRect.left + slotRect.width / 2 - tableRect.left;
+      const slotCenterY = slotRect.top + slotRect.height / 2 - tableRect.top;
+
+      const placedCards = Array.from(document.querySelectorAll(`.placed-card[data-slot-owner="${slotOwnerIndex}"][data-slot-idx="${slotIndex}"]`));
+      placedCards.sort((a, b) => a.id.localeCompare(b.id));
+
+      placedCards.forEach((el, stackIndex) => {
+        const offset = stackIndex * 8;
+        const cardWidth = el.offsetWidth || tableRect.width * 0.040;
+        const cardHeight = el.offsetHeight || tableRect.height * 0.100;
+        el.style.left = `${slotCenterX - (cardWidth / 2) - offset}px`;
+        el.style.top = `${slotCenterY - (cardHeight / 2) - offset}px`;
+      });
     }
 
     function startGame() {
@@ -2524,6 +2564,13 @@
     }
 
     function updatePlacedCardDOM(cardEl, data) {
+      // 修正要件：別の枠から移動してきた場合に、元の枠に残ったカードも詰め直せるよう、
+      // 上書きする前に元のスロット情報を保持しておく
+      const prevSlotOwnerRaw = cardEl.getAttribute('data-slot-owner');
+      const prevSlotIdxRaw = cardEl.getAttribute('data-slot-idx');
+      const prevSlotOwner = (prevSlotOwnerRaw !== null && prevSlotOwnerRaw !== '') ? parseInt(prevSlotOwnerRaw) : null;
+      const prevSlotIdx = (prevSlotIdxRaw !== null && prevSlotIdxRaw !== '') ? parseInt(prevSlotIdxRaw) : null;
+
       cardEl.setAttribute('data-owner', data.ownerIndex);
       cardEl.setAttribute('data-facedown', data.faceDown);
       cardEl.setAttribute('data-tapped', data.tapped);
@@ -2544,20 +2591,20 @@
         cardEl.innerHTML = `<img src="${data.card.img}" alt="card">`;
       }
 
-      let posX = data.x;
-      let posY = data.y;
+      cardEl.style.zIndex = data.zIndex || 10;
 
       if (data.slotOwnerIndex !== null && data.slotIndex !== null) {
-        const slotPos = getSlotPosition(data.slotOwnerIndex, data.slotIndex, data.id);
-        if (slotPos) {
-          posX = slotPos.x;
-          posY = slotPos.y;
-        }
+        // 修正要件：このマスにある全カードの重なり順を並べ直し、斜めオフセットのズレを解消する
+        repositionSlotStack(data.slotOwnerIndex, data.slotIndex);
+      } else {
+        cardEl.style.left = `${data.x}px`;
+        cardEl.style.top = `${data.y}px`;
       }
 
-      cardEl.style.left = `${posX}px`;
-      cardEl.style.top = `${posY}px`;
-      cardEl.style.zIndex = data.zIndex || 10;
+      // 修正要件：別の枠から移動してきた場合、元の枠に残ったカードも詰め直す
+      if (prevSlotOwner !== null && (prevSlotOwner !== data.slotOwnerIndex || prevSlotIdx !== data.slotIndex)) {
+        repositionSlotStack(prevSlotOwner, prevSlotIdx);
+      }
     }
 
     function setupPlacedCardInteraction(cardEl, initialData) {
@@ -2754,23 +2801,28 @@
     function moveBoardCardLocal(data) {
       const cardEl = document.getElementById(data.id);
       if (!cardEl) return;
+
+      // 修正要件：移動元のスロットに残ったカードも詰め直せるよう、上書き前に保持しておく
+      const prevSlotOwnerRaw = cardEl.getAttribute('data-slot-owner');
+      const prevSlotIdxRaw = cardEl.getAttribute('data-slot-idx');
+      const prevSlotOwner = (prevSlotOwnerRaw !== null && prevSlotOwnerRaw !== '') ? parseInt(prevSlotOwnerRaw) : null;
+      const prevSlotIdx = (prevSlotIdxRaw !== null && prevSlotIdxRaw !== '') ? parseInt(prevSlotIdxRaw) : null;
+
       cardEl.setAttribute('data-slot-owner', data.slotOwnerIndex !== null ? data.slotOwnerIndex : '');
       cardEl.setAttribute('data-slot-idx', data.slotIndex !== null ? data.slotIndex : '');
       cardEl.style.zIndex = data.zIndex || 10;
 
-      let posX = data.x;
-      let posY = data.y;
-
       if (data.slotOwnerIndex !== null && data.slotIndex !== null) {
-        const slotPos = getSlotPosition(data.slotOwnerIndex, data.slotIndex, data.id);
-        if (slotPos) {
-          posX = slotPos.x;
-          posY = slotPos.y;
-        }
+        // 修正要件：このマスにある全カードの重なり順を並べ直し、斜めオフセットのズレを解消する
+        repositionSlotStack(data.slotOwnerIndex, data.slotIndex);
+      } else {
+        cardEl.style.left = `${data.x}px`;
+        cardEl.style.top = `${data.y}px`;
       }
 
-      cardEl.style.left = `${posX}px`;
-      cardEl.style.top = `${posY}px`;
+      if (prevSlotOwner !== null && (prevSlotOwner !== data.slotOwnerIndex || prevSlotIdx !== data.slotIndex)) {
+        repositionSlotStack(prevSlotOwner, prevSlotIdx);
+      }
     }
 
     function changeCardOwnerLocal(data) {
@@ -2795,7 +2847,15 @@
       if (cardEl) {
         // 修正要件：カードが場から消える際、拡大プレビューが表示されたままにならないよう保険で閉じる
         hidePreview();
+        const slotOwnerRaw = cardEl.getAttribute('data-slot-owner');
+        const slotIdxRaw = cardEl.getAttribute('data-slot-idx');
+        const slotOwner = (slotOwnerRaw !== null && slotOwnerRaw !== '') ? parseInt(slotOwnerRaw) : null;
+        const slotIdx = (slotIdxRaw !== null && slotIdxRaw !== '') ? parseInt(slotIdxRaw) : null;
         cardEl.remove();
+        // 修正要件：このマスに残ったカードの重なりオフセットも詰め直す
+        if (slotOwner !== null && slotIdx !== null) {
+          repositionSlotStack(slotOwner, slotIdx);
+        }
       }
     }
 
@@ -2968,6 +3028,8 @@
 
     function toggleActionMode(mode) {
       actionMode = (actionMode === mode) ? null : mode;
+      // 修正要件：モードを切り替えた際、開いたままのデッキ戻し先選択ポップアップがあれば閉じる
+      if (pendingDeckReturnPayload) cancelDeckReturnChoice();
       updateActionModeUI();
     }
 
@@ -2977,6 +3039,24 @@
         const el = document.getElementById(zoneIds[key]);
         if (el) el.classList.toggle('action-mode-active', actionMode === key);
       });
+
+      // 修正要件：どのモードに入っているか一目で分かるよう、画面上部に帯でモード名を表示する
+      const banner = document.getElementById('action-mode-banner');
+      if (banner) {
+        banner.classList.remove('mode-graveyard', 'mode-lifegain', 'mode-deckreturn');
+        if (actionMode) {
+          const labels = {
+            graveyard: '墓地送りモード中：送りたいカードをクリックしてください',
+            lifegain: '獲得ライフ追加モード中：追加したいカードをクリックしてください',
+            deckreturn: 'デッキ戻しモード中：戻したいカードをクリックしてください'
+          };
+          banner.classList.add('mode-' + actionMode);
+          banner.innerText = `${labels[actionMode]}（もう一度ボタンを押すと終了）`;
+          banner.style.display = 'block';
+        } else {
+          banner.style.display = 'none';
+        }
+      }
     }
 
     // 修正要件：手札・場のカードどちらをクリックした場合も共通で処理する
