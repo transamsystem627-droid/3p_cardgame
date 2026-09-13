@@ -208,7 +208,7 @@
       document.getElementById('draft-view').style.display = 'none';
       document.getElementById('deck-builder-view').style.display = 'none';
 
-      // 実際の対戦開始ロジック(先行決定・棒の自動調整・2人モードならマリガン等)をそのまま通す
+      // 実際の対戦開始ロジック(先行決定・ウォールの自動調整・2人モードならマリガン等)をそのまま通す
       checkAllDeckReady();
     }
 
@@ -231,6 +231,11 @@
       myPlayerIndex = s.myPlayerIndex;
       cardFolder = s.cardFolder || 'card-bl';
       if (s.playerNames) playerNames = s.playerNames;
+      // 修正要件：モード(2人/3人)の復元。これをenterBattleViewOnly()より前に行わないと、
+      // 常にデフォルトの3人モードとしてレイアウトが組まれてしまい、2人対戦が復帰後に
+      // 3人用画面へ戻ったように見えるバグになる
+      if (s.matchMode) matchMode = s.matchMode;
+      if (s.playerCount) playerCount = s.playerCount;
       lastKnownHostId = s.hostId;
 
       const box = document.getElementById('resume-session-box');
@@ -427,7 +432,7 @@
     function buildPublicSnapshot() {
       return {
         playerNames, cardFolder,
-        playerStates, graveyards,
+        playerStates, graveyards, lifeGains,
         boardCards: buildBoardCardsSnapshot(),
         pairStage: Object.assign({}, pairStage),
         turnPlayerIndex: (typeof turnPlayerIndex !== 'undefined') ? turnPlayerIndex : null
@@ -438,8 +443,24 @@
       if (!pub) return;
       if (pub.playerNames) playerNames = pub.playerNames;
       if (pub.cardFolder) cardFolder = pub.cardFolder;
-      if (pub.playerStates) playerStates = pub.playerStates;
-      if (pub.graveyards) graveyards = pub.graveyards;
+      // 修正要件：再接続時、ホストから届く公開状態は自分が切断される直前の古い情報の場合がある。
+      // 自分自身の枠だけは直前にプライベートスナップショットから復元した最新の内容を優先し、
+      // ホストの古い情報で上書き（＝手札以外のカード情報の消失）してしまわないようにする
+      if (pub.playerStates) {
+        const myState = playerStates[myPlayerIndex];
+        playerStates = pub.playerStates;
+        if (myState) playerStates[myPlayerIndex] = myState;
+      }
+      if (pub.graveyards) {
+        const myGy = graveyards[myPlayerIndex];
+        graveyards = pub.graveyards;
+        if (myGy) graveyards[myPlayerIndex] = myGy;
+      }
+      if (pub.lifeGains) {
+        const myLg = lifeGains[myPlayerIndex];
+        lifeGains = pub.lifeGains;
+        if (myLg) lifeGains[myPlayerIndex] = myLg;
+      }
       document.querySelectorAll('.placed-card').forEach(el => el.remove());
       (pub.boardCards || []).forEach(data => syncBoardCardLocal(data));
       if (pub.pairStage) {
@@ -450,6 +471,7 @@
       if (pub.turnPlayerIndex !== null && pub.turnPlayerIndex !== undefined && typeof applyTurnPlayerSilent === 'function') {
         applyTurnPlayerSilent(pub.turnPlayerIndex);
       }
+      renderLifeGainList();
       updateAllPlayerStatsDisplay();
       renderGraveyardList();
     }
@@ -463,6 +485,8 @@
           isHost, myPlayerIndex, myName,
           hostId: isHost ? myId : lastKnownHostId,
           cardFolder, playerNames,
+          // 修正要件：2人/3人モードの情報も保存し、再接続時に3人用画面へ戻ってしまうのを防ぐ
+          matchMode, playerCount,
           phase: currentPhase,
           private: (currentPhase === 'battle') ? buildPrivateSnapshot() : null,
           public: (isHost && currentPhase === 'battle') ? buildPublicSnapshot() : null
@@ -879,16 +903,16 @@
           showMulliganModal();
         }
 
-        // 修正要件：対戦開始時に先行プレイヤーを決定し、棒の位置を自動調整する（ホストのみが決定し全員に配信）
+        // 修正要件：対戦開始時に先行プレイヤーを決定し、ウォールの位置を自動調整する（ホストのみが決定し全員に配信）
         // 3人モード：先行は2番手・3番手それぞれに微不利、2番手は3番手に微不利
-        // 2人モード：先行の視点で左の8段階棒は下から4段階目、右の4段階棒は下から2段階目に自動移動
-        // (段階1=有利/+2, 2=微有利/+1, 3=微不利/-1, 4=不利/-2 の対応。8段階棒は1=最も相手に有利,8=最も自分に有利)
+        // 2人モード：先行の視点で左の8段階ウォールは下から4段階目、右の4段階ウォールは下から2段階目に自動移動
+        // (段階1=有利/+2, 2=微有利/+1, 3=微不利/-1, 4=不利/-2 の対応。8段階ウォールは1=最も相手に有利,8=最も自分に有利)
         if (isHost) {
           const first = Math.floor(Math.random() * playerCount);
           if (playerCount === 2) {
             const second = (first + 1) % 2;
-            setPairFavor(first, second, 3);           // 右の棒：下から2段階目(=stage3)
-            setSecondaryPairFavor(first, second, 5);   // 左の棒：下から4段階目(=stage5、8段階中)
+            setPairFavor(first, second, 3);           // 右のウォール：下から2段階目(=stage3)
+            setSecondaryPairFavor(first, second, 5);   // 左のウォール：下から4段階目(=stage5、8段階中)
             broadcast({ type: 'SYNC_PAIR_STAGE_ALL', payload: { pairStage: Object.assign({}, pairStage) } });
             broadcast({ type: 'SYNC_SECONDARY_BAR', payload: { stage: secondaryPairStage } });
             renderAllBarsForMe();
@@ -1111,6 +1135,11 @@
           graveyards[data.payload.ownerIndex] = data.payload.graveyard;
           renderGraveyardList();
           break;
+        // 修正要件：獲得ライフに追加されたカードも墓地と同様に全員へ同期する
+        case 'SYNC_LIFE_GAIN':
+          lifeGains[data.payload.ownerIndex] = data.payload.lifeGain;
+          renderLifeGainList();
+          break;
         case 'SYNC_PAIR_STAGE':
           // 修正要件：正準ペア値を受け取り、自分の視点で3本すべてを再描画する
           pairStage[data.payload.pairKey] = data.payload.stage;
@@ -1122,7 +1151,7 @@
           renderAllBarsForMe();
           break;
         case 'SYNC_SECONDARY_BAR':
-          // 修正要件：2人モード専用、8段階の棒も対戦相手との有利不利を表す正準値として同期する
+          // 修正要件：2人モード専用、8段階のウォールも対戦相手との有利不利を表す正準値として同期する
           secondaryPairStage = data.payload.stage;
           renderSecondaryBarForMe();
           break;
@@ -1183,7 +1212,7 @@
             <div class="score-box"><span class="score-label">トリニティ:</span><span id="p${pNum}-trinity-val" class="score-val">0</span></div>
             <div class="score-box"><span class="score-label">獲得ライフ:</span><span id="p${pNum}-card-score" class="score-val" style="color:#e0f2fe;">0</span></div>
             <div class="score-box">
-              <span class="score-label">マナ:</span>
+              <span class="score-label">カラー:</span>
               <span id="p${pNum}-mana-count" class="score-val" style="color:#38bdf8;">0</span>
               <div class="mana-color-breakdown">
                 (<span class="mc-red" id="p${pNum}-mana-red">0</span>/
@@ -1261,7 +1290,7 @@
         trackLeftP1.style.height = '3.2vh';
         trackLeftP1.style.transform = 'translateX(-50%) rotate(180deg)';
 
-        // 修正要件：P3視点は左右の棒を入れ替え（旧right-p1の配置をtrackTopへ、旧trackTopの配置をtrackRightP1へ）
+        // 修正要件：P3視点は左右のウォールを入れ替え（旧right-p1の配置をtrackTopへ、旧trackTopの配置をtrackRightP1へ）
         trackTop.classList.add('bar-vertical', 'bar-flip');
         trackTop.style.position = 'absolute';
         trackTop.style.left = '20%';
@@ -1321,8 +1350,8 @@
       repositionMatchupLabels();
       hideUnusedBarsForTwoPlayerMode();
 
-      // 修正要件：2人モードでは唯一表示される棒をまっすぐ縦向きにして右側へ移動する
-      // ただし、プレイヤー2の画面では8段階の棒(左)と4段階の棒(右)の位置を入れ替える
+      // 修正要件：2人モードでは唯一表示されるウォールをまっすぐ縦向きにして右側へ移動する
+      // ただし、プレイヤー2の画面では8段階のウォール(左)と4段階のウォール(右)の位置を入れ替える
       // (このあとのadjustPerspectiveBarLayout内の分岐でインラインstyleが設定済みのため、
       //  CSSではなくここで直接上書きする)
       if (playerCount === 2) {
@@ -1331,7 +1360,7 @@
           return m && m.pairKey === 'AB';
         });
         const usedTrack = usedPos ? document.getElementById(`track-${usedPos}`) : null;
-        // 修正要件：プレイヤー2の画面だけ4段階棒を左、8段階棒を右にする
+        // 修正要件：プレイヤー2の画面だけ4段階ウォールを左、8段階ウォールを右にする
         const fourStageSide = (myPlayerIndex === 1) ? 'left' : 'right';
         const eightStageSide = (myPlayerIndex === 1) ? 'right' : 'left';
         if (usedTrack) {
@@ -1343,7 +1372,7 @@
           usedTrack.style.top = 'auto';
           usedTrack.style.bottom = '1vh';
           usedTrack.style.width = '1.6vw';
-          // 修正要件：棒をもう少し長くし、共有プレイエリアの中央あたりの高さまで届くようにする
+          // 修正要件：ウォールをもう少し長くし、共有プレイエリアの中央あたりの高さまで届くようにする
           usedTrack.style.height = '26vh';
           usedTrack.style.transform = 'none';
         }
@@ -1352,7 +1381,7 @@
           secondaryTrack.style.left = (eightStageSide === 'left') ? '14%' : 'auto';
           secondaryTrack.style.right = (eightStageSide === 'right') ? '14%' : 'auto';
         }
-        // 修正要件：棒を移動したのに合わせて、対応するラベルも同じ側へ追従させる
+        // 修正要件：ウォールを移動したのに合わせて、対応するラベルも同じ側へ追従させる
         // (repositionMatchupLabelsは通常視点の位置に配置済みのため、ここで上書きする)
         const usedLabel = usedPos ? document.getElementById(`matchup-${usedPos}`) : null;
         if (usedLabel) {
@@ -1374,7 +1403,7 @@
     }
 
     // 修正要件：2人モードでは対戦カードがP1vP2の1組しか存在しないため、
-    // それ以外の(未使用の)棒とラベルを非表示にする
+    // それ以外の(未使用の)ウォールとラベルを非表示にする
     function hideUnusedBarsForTwoPlayerMode() {
       if (playerCount !== 2) {
         ['top', 'left-p1', 'right-p1'].forEach(pos => {
@@ -1400,7 +1429,7 @@
     const VISUAL_SLOT_FOR_DOM = {
       0: { 'left-p1': 'left', 'right-p1': 'right', 'top': 'top' },
       1: { 'top': 'left', 'left-p1': 'right', 'right-p1': 'top' },
-      // 修正要件：P3視点は左右の棒を入れ替え
+      // 修正要件：P3視点は左右のウォールを入れ替え
       2: { 'top': 'left', 'right-p1': 'right', 'left-p1': 'top' }
     };
     const LABEL_VISUAL_POS = {
@@ -1418,8 +1447,8 @@
       });
     }
 
-    /* 棒の操作関数 */
-    // 修正要件：棒はプレイヤー同士のペアごとの有利不利を表す。
+    /* ウォールの操作関数 */
+    // 修正要件：ウォールはプレイヤー同士のペアごとの有利不利を表す。
     // 正準値は3ペア分だけ持ち(AB=P1視点でのP1対P2, AC=P1視点でのP1対P3, BC=P2視点でのP2対P3)、
     // 各プレイヤーの画面では、そのプレイヤーの視点に応じて向き(反転)を変えて表示する。
     // 注意：adjustPerspectiveBarLayout()が視点に応じてtrack-top/left-p1/right-p1のDOM要素そのものを
@@ -1429,7 +1458,7 @@
     const BAR_PAIR_MAP = {
       0: { 'left-p1': { pairKey: 'AB', invert: false }, 'right-p1': { pairKey: 'AC', invert: false }, 'top': { pairKey: 'BC', invert: false } },
       1: { 'top': { pairKey: 'BC', invert: false }, 'left-p1': { pairKey: 'AB', invert: true }, 'right-p1': { pairKey: 'AC', invert: true } },
-      // 修正要件：P3視点で左右の棒の内容を入れ替える(視覚上の左=P3vP1、右=P3vP2になるようにする)
+      // 修正要件：P3視点で左右のウォールの内容を入れ替える(視覚上の左=P3vP1、右=P3vP2になるようにする)
       2: { 'top': { pairKey: 'AC', invert: true }, 'right-p1': { pairKey: 'BC', invert: true }, 'left-p1': { pairKey: 'AB', invert: false } }
     };
 
@@ -1445,9 +1474,9 @@
     function setBarStage(pos, clickedStage) {
       const map = BAR_PAIR_MAP[myPlayerIndex][pos];
       if (!map) return;
-      // 修正要件：BAR_REVERSED(表示上の左右/上下反転)が適用されている棒は、
+      // 修正要件：BAR_REVERSED(表示上の左右/上下反転)が適用されているウォールは、
       // クリックしたノードの見た目位置と一致するよう、まずクリック値を実際の表示段階に変換してから使う
-      // (これをしないと、反転された棒でクリックした場所と反対側にハンドルが移動してしまう)
+      // (これをしないと、反転されたウォールでクリックした場所と反対側にハンドルが移動してしまう)
       const reversed = (playerCount !== 2) && BAR_REVERSED[myPlayerIndex] && BAR_REVERSED[myPlayerIndex][pos];
       const displayedStage = reversed ? (5 - clickedStage) : clickedStage;
       const canonicalStage = map.invert ? (5 - displayedStage) : displayedStage;
@@ -1456,7 +1485,7 @@
       renderAllBarsForMe();
     }
 
-    // 修正要件：正準ペア値が更新されたら、自分の視点に応じて3本の棒すべてを再描画する
+    // 修正要件：正準ペア値が更新されたら、自分の視点に応じて3本のウォールすべてを再描画する
     function renderAllBarsForMe() {
       ['left-p1', 'right-p1', 'top'].forEach(pos => {
         const map = BAR_PAIR_MAP[myPlayerIndex][pos];
@@ -1467,7 +1496,7 @@
       updateMatchupLabels();
     }
 
-    // 修正要件：各棒がどのプレイヤー同士の有利不利を示しているかをラベル表示する
+    // 修正要件：各ウォールがどのプレイヤー同士の有利不利を示しているかをラベル表示する
     // (ラベルの左側の名前が有利=上/不利=下 の主語になる)
     const PAIR_PLAYERS = { AB: [0, 1], AC: [0, 2], BC: [1, 2] };
     function updateMatchupLabels() {
@@ -1483,9 +1512,9 @@
       });
     }
 
-    // 修正要件：P2視点で「右の棒」は上下を反対に、「上部の棒」は左右を反対にする
-    // P3視点は左右の棒(DOM: top, right-p1)を両方とも上下反対にする
-    // P1視点の「上部の棒」(横向き)も、段階1(有利)が右端に来るよう左右反転が必要
+    // 修正要件：P2視点で「右のウォール」は上下を反対に、「上部のウォール」は左右を反対にする
+    // P3視点は左右のウォール(DOM: top, right-p1)を両方とも上下反対にする
+    // P1視点の「上部のウォール」(横向き)も、段階1(有利)が右端に来るよう左右反転が必要
     // (見た目の角度はそのまま。ハンドル位置の割合だけ反転させる)
     const BAR_REVERSED = {
       0: { 'top': true },
@@ -1500,7 +1529,7 @@
 
       const isVertical = track.classList.contains('bar-vertical');
       let percentage = (stage - 1) * 33.33;
-      // 修正要件：BAR_REVERSEDは3人モードの物理的な棒の入れ替え(回転)を補正するためのものであり、
+      // 修正要件：BAR_REVERSEDは3人モードの物理的なウォールの入れ替え(回転)を補正するためのものであり、
       // 2人モードは別の仕組み(BAR_PAIR_MAPのinvertで正準値そのものを反転)で鏡写しを実現しているため、
       // 2人モードでは重ねて適用しない（重ねると反転が相殺されて正しく動かなくなる）
       const reversed = (playerCount !== 2) && BAR_REVERSED[myPlayerIndex] && BAR_REVERSED[myPlayerIndex][pos];
@@ -1515,8 +1544,8 @@
       }
     }
 
-    // 修正要件：2人モード専用、左側の8段階の棒も対戦相手との有利不利を表す。
-    // 4段階の棒(pairStage)と同じ考え方で、絶対プレイヤー番号の小さい方基準の正準値(1-8)を持ち、
+    // 修正要件：2人モード専用、左側の8段階のウォールも対戦相手との有利不利を表す。
+    // 4段階のウォール(pairStage)と同じ考え方で、絶対プレイヤー番号の小さい方基準の正準値(1-8)を持ち、
     // 各プレイヤーは自分の視点で(直接 or 9-N反転)表示する。
     // (プレイヤー1視点で下からN段階目 ⇔ プレイヤー2視点では上からN段階目、という対称性はこれで自動的に成立する)
     let secondaryPairStage = 1;
@@ -1619,6 +1648,8 @@
     let deckCards = [], lifeDecks = { left: [], right: [] }, currentRevealedLifeCard = null, targetLifeSlotIndex = null;
     let revealedCardSource = null; // 修正要件：'deck'(1枚めくる由来)か'life'(ライフ由来)かを区別
     let graveyards = [[], [], []], currentGyTab = 0, highestZIndex = 1000;
+    // 修正要件：獲得ライフに追加されたカードも墓地と同様に全員が確認できるよう保持する
+    let lifeGains = [[], [], []], currentLifeGainTab = 0;
     let localManaList = [];
     const COLOR_ORDER = { 'red': 1, 'yellow': 2, 'blue': 3, 'purple': 4 };
 
@@ -1741,11 +1772,12 @@
       updateTurnRestrictedButtons();
     }
 
-    // 修正要件：トリニティドロー/トリニティチャージ/検索は、ターンプレイヤーのみ操作可能にする
-    // (獲得ライフに追加はドロップ先のため、別途ドロップ処理側でturnPlayerIndexチェックを行っている)
+    // 修正要件：トリニティドロー/トリニティチャージは、ターンプレイヤーのみ操作可能にする
+    // (検索ボタンは相手のターン中でも押せるよう、対象から除外している。
+    //  獲得ライフに追加はドロップ先のため、別途ドロップ処理側でturnPlayerIndexチェックを行っている)
     function updateTurnRestrictedButtons() {
       const isMyTurn = turnPlayerIndex === myPlayerIndex;
-      ['trinity-draw-btn', 'trinity-charge-btn', 'deck-search-btn'].forEach(id => {
+      ['trinity-draw-btn', 'trinity-charge-btn'].forEach(id => {
         const btn = document.getElementById(id);
         if (!btn) return;
         btn.disabled = !isMyTurn;
@@ -1923,6 +1955,7 @@
       deckCards = [];
       lifeDecks = { left: [], right: [] };
       graveyards = [[], [], []];
+      lifeGains = [[], [], []];
       localManaList = [];
       currentRevealedLifeCard = null;
       targetLifeSlotIndex = null;
@@ -1941,7 +1974,7 @@
       playerPacks = [[], [], []];
       roundPacksPool = [];
       selectedCard = null;
-      // 修正要件：棒の正準値もリセットして次の対戦をニュートラルな状態から始める
+      // 修正要件：ウォールの正準値もリセットして次の対戦をニュートラルな状態から始める
       pairStage = { AB: 1, AC: 1, BC: 1 };
 
       playerStates = [
@@ -1957,6 +1990,8 @@
       document.getElementById('draft-status-info').style.display = 'flex';
       document.getElementById('deck-status-info').style.display = 'none';
       document.getElementById('phase-title').innerText = '🃏 ドラフトフェーズ';
+      renderGraveyardList();
+      renderLifeGainList();
     }
 
     function showTurnAnnouncement() {
@@ -2186,6 +2221,11 @@
           btn.innerText = playerNames[i] || `P${i + 1}`;
           btn.style.display = (i < playerCount) ? '' : 'none';
         }
+        const lgBtn = document.getElementById(`lg-tab-p${i}`);
+        if (lgBtn) {
+          lgBtn.innerText = playerNames[i] || `P${i + 1}`;
+          lgBtn.style.display = (i < playerCount) ? '' : 'none';
+        }
       }
 
       updateLockSlotsLifeText();
@@ -2337,13 +2377,19 @@
         if (inRect(scoreZone) && turnPlayerIndex === myPlayerIndex) {
           if (wrapperEl) wrapperEl.remove();
           playerStates[myPlayerIndex].lifeScore += 1;
+          // 修正要件：獲得ライフに加えたカードの実体も保存し、墓地と同様に一覧確認できるようにする
+          lifeGains[myPlayerIndex].push(card);
           broadcastPlayerState();
+          broadcastLifeGain(myPlayerIndex);
           broadcastLog(`${myDisplayName()}が獲得ライフに追加しました`);
           checkWinCondition();
           // 修正要件：獲得ライフに加えた操作も一手戻せるようにする
           recordUndo('獲得ライフに追加', () => {
             playerStates[myPlayerIndex].lifeScore -= 1;
+            const idx = lifeGains[myPlayerIndex].indexOf(card);
+            if (idx !== -1) lifeGains[myPlayerIndex].splice(idx, 1);
             broadcastPlayerState();
+            broadcastLifeGain(myPlayerIndex);
             addCardToHand(card);
           });
           return;
@@ -2644,13 +2690,19 @@
           if (me.clientX >= scoreZone.left && me.clientX <= scoreZone.right && me.clientY >= scoreZone.top && me.clientY <= scoreZone.bottom && turnPlayerIndex === myPlayerIndex) {
             const snap = captureSnap();
             playerStates[myPlayerIndex].lifeScore += 1;
+            // 修正要件：獲得ライフに加えたカードの実体も保存し、墓地と同様に一覧確認できるようにする
+            lifeGains[myPlayerIndex].push(snap.card);
             removeBoardCard(cardEl.id);
             broadcastPlayerState();
+            broadcastLifeGain(myPlayerIndex);
             broadcastLog(`${myDisplayName()}が獲得ライフに追加しました`);
             recordUndo('獲得ライフに追加', () => {
               playerStates[myPlayerIndex].lifeScore -= 1;
+              const idx = lifeGains[myPlayerIndex].indexOf(snap.card);
+              if (idx !== -1) lifeGains[myPlayerIndex].splice(idx, 1);
               restoreCardToBoard(snap);
               broadcastPlayerState();
+              broadcastLifeGain(myPlayerIndex);
             });
             checkWinCondition();
             return;
@@ -2929,18 +2981,25 @@
       updateLifeStatus();
 
       // 修正要件：ライフデッキが0枚になった瞬間にパニッシュバーンが発生する
-      // (右のライフデッキが尽きれば右の棒、左が尽きれば左の棒がそのプレイヤーにとって有利になる)
+      // (右のライフデッキが尽きれば右のウォール、左が尽きれば左のウォールがそのプレイヤーにとって有利になる)
       // 注意：「左/右」は常に自分の視点での左右バーを指すため、DOM要素ID経由(setBarStage)ではなく、
       // 対戦カードを直接指定するsetPairFavorで設定する(視点によってDOM要素と見た目の左右が入れ替わるため)
       if (pool.length === 0) {
         // 修正要件：2人モードは対戦相手が1人だけのため、左右どちらのライフデッキが尽きても
-        // 唯一の対戦相手との対戦カードを有利にする（3人モードは従来通り左右で相手を分ける）
-        const opponent = (playerCount === 2)
-          ? (myPlayerIndex + 1) % 2
-          : (side === 'left' ? (myPlayerIndex + 1) % 3 : (myPlayerIndex + 2) % 3);
-        setPairFavor(myPlayerIndex, opponent, 1);
-        broadcast({ type: 'SYNC_PAIR_STAGE_ALL', payload: { pairStage: Object.assign({}, pairStage) } });
-        renderAllBarsForMe();
+        // 唯一の対戦相手との対戦カードを有利にする（3人モードは従来通り左右で相手を分ける）。
+        // また2人モードで有利不利を表すのは4段階ウォールではなく8段階ウォールのため、
+        // そちらを自分に最も有利な端(stage8)まで移動させる（従来は誤って4段階ウォールが動いていた）
+        if (playerCount === 2) {
+          const opponent = (myPlayerIndex + 1) % 2;
+          setSecondaryPairFavor(myPlayerIndex, opponent, 8);
+          broadcast({ type: 'SYNC_SECONDARY_BAR', payload: { stage: secondaryPairStage } });
+          renderSecondaryBarForMe();
+        } else {
+          const opponent = (side === 'left' ? (myPlayerIndex + 1) % 3 : (myPlayerIndex + 2) % 3);
+          setPairFavor(myPlayerIndex, opponent, 1);
+          broadcast({ type: 'SYNC_PAIR_STAGE_ALL', payload: { pairStage: Object.assign({}, pairStage) } });
+          renderAllBarsForMe();
+        }
         broadcastLog(`${myDisplayName()}の${side === 'left' ? '左' : '右'}のライフデッキが尽き、パニッシュバーンが発生しました！`);
       }
 
@@ -3012,12 +3071,45 @@
       });
     }
 
-    /* 修正要件：デッキ内検索画面を手札・マナエリアを覆うオーバーレイに変更 */
+    /* 修正要件：獲得ライフに追加したカードも、墓地一覧と同様に全員が画像で一覧確認できるようにする */
+    function broadcastLifeGain(pIdx) {
+      broadcast({
+        type: 'SYNC_LIFE_GAIN',
+        payload: { ownerIndex: pIdx, lifeGain: lifeGains[pIdx] }
+      });
+      renderLifeGainList();
+    }
+
+    function switchLifeGainTab(pIdx) {
+      currentLifeGainTab = pIdx;
+      for (let i = 0; i < 3; i++) {
+        const btn = document.getElementById(`lg-tab-p${i}`);
+        if (btn) btn.style.background = (i === pIdx) ? '#4f46e5' : '#334155';
+      }
+      renderLifeGainList();
+    }
+
+    // 修正要件：獲得ライフ一覧は確認用のため、墓地と違いドラッグでの持ち出しは不可にする
+    function renderLifeGainList() {
+      const container = document.getElementById('life-gain-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const list = lifeGains[currentLifeGainTab] || [];
+      const countEl = document.getElementById('lg-count');
+      if (countEl) countEl.innerText = (lifeGains[myPlayerIndex] || []).length;
+
+      list.forEach((card) => {
+        const cardEl = createCardElement(card, null, 'lifegain', false);
+        container.appendChild(cardEl);
+      });
+    }
+
+    /* 修正要件：デッキ内検索画面を手札・カラーエリアを覆うオーバーレイに変更 */
+    // 修正要件：検索ボタンは相手のターン中でも押せるようにする（ターン制限を撤廃）
     function toggleDeckSearch() {
       const overlay = document.getElementById('deck-search-overlay');
       if (overlay.style.display === 'none' || overlay.style.display === '') {
-        // 修正要件：デッキ内検索を開く操作はターンプレイヤーのみ（閉じる操作は誰でも可能）
-        if (turnPlayerIndex !== myPlayerIndex) return;
         overlay.style.display = 'flex';
         renderDeckSearchList();
       } else {
@@ -3059,7 +3151,7 @@
         manaEl.className = `mana-card mana-${mana.color}` + (mana.tapped ? ' tapped' : '');
         manaEl.innerText = mana.color.charAt(0).toUpperCase();
 
-        // 修正要件：マナ同士の重なりを少しだけ小さく(1.2vw -> 1.5vw間隔)
+        // 修正要件：カラー同士の重なりを少しだけ小さく(1.2vw -> 1.5vw間隔)
         const overlapOffset = idx * 1.5;
         manaEl.style.left = `calc(10vw + ${overlapOffset}vw)`;
 
@@ -3102,22 +3194,22 @@
             if (isDragging) {
               const zoneRect = zone.getBoundingClientRect();
               if (me.clientX < zoneRect.left || me.clientX > zoneRect.right || me.clientY < zoneRect.top || me.clientY > zoneRect.bottom) {
-                // 修正要件：マナをドラッグしてエリア外に破棄した際、誰が何色のマナを破棄したかをログ通知
+                // 修正要件：カラーをドラッグしてエリア外に破棄した際、誰が何色のカラーを破棄したかをログ通知
                 localManaList = localManaList.filter(m => m.id !== mana.id);
                 renderManaZone();
                 broadcastPlayerState();
-                broadcastLog(`${myDisplayName()}が${manaColorLabel(mana.color)}マナを破棄しました`);
+                broadcastLog(`${myDisplayName()}が${manaColorLabel(mana.color)}カラーを破棄しました`);
               } else {
                 renderManaZone();
               }
             } else {
-              // 修正要件：マナを横向き(使用)にした際、誰が何色のマナを使用したかをログ通知
+              // 修正要件：カラーを横向き(使用)にした際、誰が何色のカラーを使用したかをログ通知
               mana.tapped = !mana.tapped;
               renderManaZone();
               if (mana.tapped) {
-                broadcastLog(`${myDisplayName()}が${manaColorLabel(mana.color)}マナを使用しました`);
+                broadcastLog(`${myDisplayName()}が${manaColorLabel(mana.color)}カラーを使用しました`);
               }
-              // 修正要件：トリニティチャージ中は、新たに横にしたマナの枚数を追跡する
+              // 修正要件：トリニティチャージ中は、新たに横にしたカラーの枚数を追跡する
               if (trinityChargeActive) {
                 if (mana.tapped) {
                   trinityChargeNewlyTapped.add(mana.id);
@@ -3167,7 +3259,7 @@
       broadcastLog(`${myDisplayName()}がトリニティドローを行いました`);
     }
 
-    /* 修正要件：トリニティチャージ（マナゾーン以外を暗転させ、新たに3枚横向きにすると決定ボタンが出現） */
+    /* 修正要件：トリニティチャージ（カラーゾーン以外を暗転させ、新たに3枚横向きにすると決定ボタンが出現） */
     let trinityChargeActive = false;
     let trinityChargeNewlyTapped = new Set();
     let trinityChargeUsedThisTurn = false; // 修正要件：1ターンに1度のみ
@@ -3194,7 +3286,7 @@
 
     function cancelTrinityCharge() {
       if (!trinityChargeActive) return;
-      // 新しく横にしたマナを縦向きに戻す
+      // 新しく横にしたカラーを縦向きに戻す
       localManaList.forEach(m => {
         if (trinityChargeNewlyTapped.has(m.id)) m.tapped = false;
       });
