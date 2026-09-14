@@ -290,6 +290,8 @@
     
     .orient-p1 { border-color: #38bdf8; }
     .orient-p2 { border-color: #f43f5e; }
+    /* 修正要件：3番目のプレイヤーのカードにも枠線の色分けを追加(既存のP3識別色である緑に統一) */
+    .orient-p3 { border-color: #22c55e; }
     
     .card-rot-p2 { transform: rotate(160deg); }
     .card-rot-p3 { transform: rotate(-160deg); }
