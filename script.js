@@ -472,6 +472,9 @@
         playerStates, graveyards, lifeGains,
         boardCards: buildBoardCardsSnapshot(),
         pairStage: Object.assign({}, pairStage),
+        // 修正要件：8段階ウォール(secondaryPairStage)が公開状態に含まれておらず、
+        // 再接続時に既定値(1)へ戻ってしまい「ウォールの段階が少し狂う」原因になっていたため追加
+        secondaryPairStage,
         turnPlayerIndex: (typeof turnPlayerIndex !== 'undefined') ? turnPlayerIndex : null
       };
     }
@@ -503,6 +506,12 @@
       if (pub.pairStage) {
         pairStage = pub.pairStage;
         renderAllBarsForMe();
+      }
+      // 修正要件：8段階ウォールも公開状態から復元する(これが無いと再接続時に既定値へ戻ってしまい、
+      // 実際の段階と食い違う「ウォールの段階が狂う」バグになっていた)
+      if (pub.secondaryPairStage !== null && pub.secondaryPairStage !== undefined) {
+        secondaryPairStage = pub.secondaryPairStage;
+        renderSecondaryBarForMe();
       }
       // 修正要件：再接続/復帰時にもターン状態を復元（アナウンスは出さない）
       if (pub.turnPlayerIndex !== null && pub.turnPlayerIndex !== undefined && typeof applyTurnPlayerSilent === 'function') {
