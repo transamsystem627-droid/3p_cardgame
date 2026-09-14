@@ -880,6 +880,12 @@
         const item = document.createElement('div');
         item.className = 'fixed-cards-preview-item';
         item.innerHTML = `<img src="${sp.img}" alt="${sp.id}"><span class="fixed-cards-preview-label">固定カード${i + 1}</span>`;
+
+        // 修正要件：カーソルを合わせたカードをさらに拡大表示する
+        item.onmouseenter = (e) => showPreview(sp, e);
+        item.onmousemove = (e) => movePreview(e);
+        item.onmouseleave = () => hidePreview();
+
         grid.appendChild(item);
       });
       document.getElementById('fixed-cards-preview-modal').style.display = 'flex';
