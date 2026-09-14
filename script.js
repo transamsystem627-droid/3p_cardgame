@@ -871,6 +871,25 @@
       });
     }
 
+    // 修正要件：ドラフト/デッキ構築フェーズ中、固定カード(4枚)を画面中央に大きく表示して確認できるようにする
+    function showFixedCardsPreview() {
+      const grid = document.getElementById('fixed-cards-preview-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      SPECIAL_CARDS.forEach((sp, i) => {
+        const item = document.createElement('div');
+        item.className = 'fixed-cards-preview-item';
+        item.innerHTML = `<img src="${sp.img}" alt="${sp.id}"><span class="fixed-cards-preview-label">固定カード${i + 1}</span>`;
+        grid.appendChild(item);
+      });
+      document.getElementById('fixed-cards-preview-modal').style.display = 'flex';
+    }
+
+    function hideFixedCardsPreview() {
+      const modal = document.getElementById('fixed-cards-preview-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
     function moveToDeck(card) {
       if (mainDeck.length >= 23) return;
       const idx = poolCards.findIndex(c => c.id === card.id);
@@ -2430,7 +2449,7 @@
       ghost.style.zIndex = '9999';
       ghost.style.opacity = '0.85';
       ghost.innerHTML = faceDownMode
-        ? `<div style="width:100%;height:100%;background:#334155;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:1vh;">裏面</div>`
+        ? `<div style="width:100%;height:100%;background:#052e16;display:flex;align-items:center;justify-content:center;color:#4ade80;font-size:1vh;">裏面</div>`
         : `<img src="${card.img}" alt="card">`;
       document.body.appendChild(ghost);
 
@@ -2586,7 +2605,7 @@
       if (data.tapped) cardEl.classList.add('card-tapped');
 
       if (data.faceDown) {
-        cardEl.innerHTML = `<div style="font-size:1.1vh; color:#64748b; margin-top:2vh;">裏面</div>`;
+        cardEl.innerHTML = `<div style="font-size:1.1vh; color:#4ade80; margin-top:2vh;">裏面</div>`;
       } else {
         cardEl.innerHTML = `<img src="${data.card.img}" alt="card">`;
       }
