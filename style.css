@@ -586,7 +586,7 @@
     .fixed-cards-preview-title { color: #fde68a; font-size: 1.8vh; font-weight: bold; text-align: center; }
     #fixed-cards-preview-grid { display: flex; gap: 1.5vw; flex-wrap: wrap; justify-content: center; }
     #fixed-cards-preview-grid img { width: 14vw; max-width: 220px; height: auto; border-radius: 0.6vh; border: 0.15vh solid #475569; display: block; }
-    #fixed-cards-preview-grid .fixed-cards-preview-item { display: flex; flex-direction: column; align-items: center; gap: 0.4vh; }
+    #fixed-cards-preview-grid .fixed-cards-preview-item { display: flex; flex-direction: column; align-items: center; gap: 0.4vh; cursor: zoom-in; }
     .fixed-cards-preview-item .fixed-cards-preview-label { font-size: 1.1vh; color: #94a3b8; }
     .mulligan-card.selected {
       border-color: #ef4444; transform: translateY(-1vh);
