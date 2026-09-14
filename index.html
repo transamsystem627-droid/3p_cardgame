@@ -87,6 +87,9 @@
     </div>
 
     <div id="sidebar-section">
+      <!-- 修正要件：ドラフト中でも固定カード(4枚)を画面中央に大きく表示して確認できるボタン -->
+      <button class="game-btn" onclick="showFixedCardsPreview()" style="width:100%;">固定カード(4枚)を確認</button>
+
       <div class="panel-box">
         <div class="section-title" style="margin:0;">全プレイヤーの決定状況</div>
         <div class="player-status-list">
@@ -133,7 +136,10 @@
     </div>
 
     <div id="special-card-section">
-      <div class="section-title">固定カード（1枚選択）</div>
+      <div class="section-title">
+        <span>固定カード（1枚選択）</span>
+        <button class="game-btn" onclick="showFixedCardsPreview()" style="font-size:1.1vh; padding:0.3vh 0.8vw;">大きく確認</button>
+      </div>
       <div id="special-card-list"></div>
       <!-- 修正要件：ドラフトと同様に、デッキ作成の完了状況もわかるようにする -->
       <div class="panel-box" id="deck-ready-status-panel">
@@ -399,6 +405,15 @@
     <div id="turn-announcement"><div class="turn-announcement-text">あなたのターンです</div></div>
     <button id="undo-btn" onclick="undoLastAction()">元に戻す</button>
     <div id="action-log-toast"></div>
+  </div>
+
+  <!-- 修正要件：固定カード(4枚)を画面中央に大きく表示して確認できるモーダル -->
+  <div id="fixed-cards-preview-modal" onclick="hideFixedCardsPreview()">
+    <div class="fixed-cards-preview-box" onclick="event.stopPropagation()">
+      <div class="fixed-cards-preview-title">固定カード（4枚）</div>
+      <div id="fixed-cards-preview-grid"></div>
+      <button class="game-btn" onclick="hideFixedCardsPreview()">閉じる</button>
+    </div>
   </div>
 
   <div id="pass-notice">全員決定！パックを回転します ➔</div>
